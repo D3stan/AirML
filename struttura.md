@@ -18,13 +18,15 @@
 ```python
 # numpy, pandas, matplotlib, seaborn
 # sklearn (models, metrics, preprocessing, model_selection)
-# eventuali librerie extra: xgboost, lightgbm, imbalanced-learn...
+# eventuali librerie extra: xgboost, imbalanced-learn, surprise, langdetect...
 ```
 
 ### 0.3 Caricamento Dataset
 
 ```python
-# pd.read_csv() / API / download automatico
+# listings_df = pd.read_csv("listings.csv")
+# reviews_df  = pd.read_csv("reviews.csv")
+# calendar.csv NON caricato (vedi §0.1).
 # df.head(), df.shape, df.info(memory_usage="deep")
 ```
 
@@ -33,22 +35,31 @@
 ## 1. Descrizione del Contesto
 
 ### 1.1 Obiettivo
-- Cosa si vuole predire e perché è utile.
-- Tipo di task: classificazione / regressione / recommendation.
+Quattro task predittivi sui dati Airbnb (Milano, scrape 2025-09-22):
+- **Task A — Regressione**: predire il `price` di un alloggio.
+- **Task B — Regressione**: predire l'occupancy stimata annua (`estimated_occupancy_l365d`).
+- **Task C — Classificazione (NLP)**: classificare il sentiment delle recensioni.
+- **Task D — Recommendation**: suggerire alloggi a un utente.
 
 ### 1.2 Fonte e Struttura del Dataset
-- Link alla fonte, data di raccolta, modalità di acquisizione.
-- Numero di istanze e variabili.
+- **`listings.csv`** (~75 colonne, una riga per alloggio): anagrafica alloggio, host, location, prezzo, amenities, score recensioni aggregati, occupancy stimata.
+- **`reviews.csv`** (6 colonne, una riga per recensione): testi liberi con `listing_id`, `reviewer_id`, `date`, `comments`.
+- *`calendar.csv` escluso* (vedi §0.1).
 
 ### 1.3 Descrizione delle Variabili
-- Tabella o lista con: nome, tipo (numerico/categorico), significato, unità di misura.
-- Identificazione preliminare della variabile target.
+Variabili-chiave di `listings.csv`:
+- **Numeriche**: `price` (string `$180.00` → float), `accommodates`, `bathrooms`, `bedrooms`, `beds`, `minimum_nights`, `availability_{30,60,90,365}`, `number_of_reviews*`, `review_scores_*`, `reviews_per_month`, `estimated_occupancy_l365d`, `estimated_revenue_l365d`, `latitude`, `longitude`.
+- **Categoriche**: `room_type`, `property_type`, `neighbourhood_cleansed`, `host_response_time`, `host_is_superhost`, `instant_bookable`, `has_availability`.
+- **Liste / testuali**: `amenities` (JSON list), `description`, `host_about`, `name`, `neighborhood_overview`.
+- **Identificatori da rimuovere**: `id`, `listing_url`, `scrape_id`, `host_id`, `host_url`, `picture_url`, `host_thumbnail_url`, `host_picture_url`, `host_name`, `reviewer_name`.
+- **Target**: `price` (Task A), `estimated_occupancy_l365d` (Task B); per Task C/D vedi §4.3 e §4.4.
 
 ### 1.4 Prima Scrematura
 
 ```python
-# df.isnull().sum() — drop colonne con troppi null
-# Drop identificatori e colonne non informative (es. ID, timestamp grezzi)
+# Parsing tipi: price "$180.00" -> float; amenities '[...]' -> list; date -> datetime
+# Drop ID/URL/immagini (vedi 1.3)
+# df.isnull().sum() — drop colonne con >X% null (es. license, neighbourhood_group_cleansed)
 # df.duplicated().sum() — drop duplicati
 ```
 
@@ -59,77 +70,59 @@
 ### 2.1 Statistiche Generali
 
 ```python
-# df.describe() — media, std, min/max, quartili
-# value_counts() su variabili categoriche
-# Matrice di correlazione (numerico): df.corr()
+# listings_df.describe() — media, std, min/max, quartili sulle numeriche
+# value_counts() su room_type, property_type, neighbourhood_cleansed
+# Matrice di correlazione tra: price, accommodates, beds, review_scores_*, availability_*
 ```
 
-### 2.2 Distribuzione della Variabile Target
-- Grafico a torta / barplot
-- **[CLASSIFICAZIONE]** Verifica sbilanciamento classi
-- **[REGRESSIONE]** Istogramma distribuzione target
+### 2.2 Distribuzione delle Variabili Target
+- **Price (4.1)**: istogramma + log-transform (price è tipicamente skew-positivo).
+- **Occupancy (4.2)**: istogramma di `estimated_occupancy_l365d`.
+- **Sentiment label (4.3)**: barplot della label derivata — verificare sbilanciamento.
 
 ### 2.3 Distribuzione delle Feature
-- Istogrammi per feature numeriche (subplot grid)
-- Barplot per feature categoriche (top-N categorie)
-- Boxplot per evidenziare outlier
+- Istogrammi delle numeriche (subplot grid).
+- Barplot top-N per `neighbourhood_cleansed`, `property_type`.
+- Boxplot per evidenziare outlier su `price`, `minimum_nights`.
 
 ### 2.4 Relazioni Feature–Target
-- Scatter plot / scatter matrix
-- Boxplot per classe (classificazione)
-- `groupby` + barplot (es. media target per categoria)
-- Heatmap correlazione
+- Scatter `accommodates` / `beds` / `bathrooms` vs `price`.
+- Boxplot `price` per `room_type` e per `neighbourhood_cleansed`.
+- Heatmap correlazione numeriche (focus su `price` e `estimated_occupancy_l365d`).
+- Mappa lat/long colorata per prezzo (Milano).
 
 ### 2.5 Commento dei Risultati EDA
-- Osservazioni chiave: distribuzioni, outlier, correlazioni notevoli
-- Feature che sembrano più promettenti
-- Eventuali anomalie da gestire nella preparazione
+- Osservazioni chiave: distribuzioni, outlier, correlazioni notevoli.
+- Feature che sembrano più promettenti.
+- Eventuali anomalie da gestire nella preparazione.
 
 ---
 
-## 3. Preparazione dei Dati
+## 3. Preparazione Base dei Dati
 
-> Questa sezione contiene la pipeline **base** condivisa. Lo split, l'encoding finale e lo scaling vanno applicati **per-task** in §4 perché ciascun task ha un proprio target (e talvolta un proprio set di feature).
+> Questa sezione contiene la **pulizia condivisa** applicata a `listings.csv` (e join con `reviews.csv` per i task NLP/recommendation). **Split, encoding e scaling sono per-task** e vivono dentro le rispettive sezioni di §4 — vedi la tabella in §3.3.
 
-### 3.1 Feature Engineering (opzionale ma consigliato)
-- Estrazione di nuove variabili (es. ora/giorno da timestamp, NLP su testo)
-- Combinazione di feature esistenti
+### 3.1 Feature Engineering
+- Da `host_since` → `host_tenure_days` (giorni di esperienza host).
+- Da `last_review` / `first_review` → `review_span_days`, `days_since_last_review`.
+- Da `bathrooms_text` → `is_shared_bath` (booleano).
+- Da `amenities` (lista) → `n_amenities`, flag binari per amenities top-N (`wifi`, `kitchen`, `washer`, ...).
+- Da `latitude`/`longitude` → distanza dal centro città (Duomo).
 
-### 3.2 Selezione Feature e Target
+### 3.2 Gestione Valori Nulli
+- Imputation per colonna: mediana per numeriche, moda per categoriche, sentinel `"Unknown"` per testuali.
+- Drop righe con target nullo (per il task corrispondente).
 
-```python
-X = df.drop(columns=["target"])
-y = df["target"]
-```
+### 3.3 Pipeline per-task — vista d'insieme
 
-### 3.3 Gestione Valori Nulli
-- Strategia per colonna: imputation (media/mediana/moda) oppure drop righe.
+| Task | Sorgente                          | Target                          | Encoding                | Scaling      | Split                          |
+|------|-----------------------------------|---------------------------------|-------------------------|--------------|--------------------------------|
+| 4.1  | `listings.csv`                    | `price`                         | OHE su categoriche      | StandardScaler | random 80/20                  |
+| 4.2  | `listings.csv`                    | `estimated_occupancy_l365d`     | OHE su categoriche      | StandardScaler | random 80/20                  |
+| 4.3  | `reviews.csv` ⨝ `listings.csv`    | sentiment label (da `review_scores_rating`) | TF-IDF su `comments` | —          | **stratified** 80/20           |
+| 4.4  | `reviews.csv` × `listings.csv`    | rating derivato (vedi §4.4.1)   | —                       | —            | `surprise.model_selection`     |
 
-### 3.4 Encoding Variabili Categoriche
-- `pd.get_dummies()` / `OneHotEncoder`
-- Attenzione al *dummy trap* se si usa regressione lineare con intercetta.
-
-### 3.5 Train / Test Split
-
-```python
-# Regressione (4.1, 4.2):
-train_test_split(X, y, test_size=0.2, random_state=42)
-
-# Classificazione (4.3):
-train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-```
-
-- Verifica proporzioni classi in train e test (solo classificazione).
-
-### 3.6 Bilanciamento Classi *[applicabile solo al task §4.3 NLP]*
-
-Se sbilanciamento rilevante:
-- Oversampling: `SMOTE`
-- Undersampling: `RandomUnderSampler`
-- Oppure `class_weight="balanced"` direttamente nei modelli.
-
-### 3.7 Scaling *[se necessario]*
-- `StandardScaler` / `MinMaxScaler` (fit su train, transform su test).
+> Concettualmente: §3.1 e §3.2 girano una volta sola sul dataframe pulito; poi ogni task in §4 si costruisce il proprio `(X, y)`, applica lo split appropriato e il preprocessing (encoding/scaling/vectorization) **dentro una `Pipeline` sklearn** per evitare leakage.
 
 ---
 
@@ -137,9 +130,14 @@ Se sbilanciamento rilevante:
 
 ### 4.1 Task A — Price Prediction (Regressione)
 
-#### 4.1.1 Setup comune ai task di regressione
+> **Input**: feature numeriche + categoriche di `listings.csv`, **escluse** `estimated_occupancy_l365d`, `estimated_revenue_l365d` (leakage indiretto).
+> **Target**: `price` (float).
+> **Split**: random 80/20, `random_state=42`.
+> **Pipeline**: `[ColumnTransformer(OHE + StandardScaler) → Estimator]`.
 
-Funzione helper per calcolare le metriche (MAE, RMSE, R²) — definita **una volta**, riutilizzata in 4.1 e 4.2 per non duplicare codice.
+#### 4.1.1 Setup metriche
+
+Funzione helper riutilizzata in 4.1 e 4.2.
 
 ```python
 def regression_metrics(name, model, X_test, y_test):
@@ -149,41 +147,43 @@ def regression_metrics(name, model, X_test, y_test):
 ```
 
 #### 4.1.2 Modello 1 — Ridge Regression (baseline)
-- Pipeline: `[StandardScaler → Ridge]`
-- Fit su `X_train_price`, `y_train_price`
+- Pipeline: `[ColumnTransformer → Ridge]`
 - `regression_metrics(...)`
-- Plot: residui, predicted vs actual
+- Plot: residui, predicted vs actual.
 
 #### 4.1.3 Modello 2 — LASSO
 - Stessa struttura, focus su feature selection implicita.
 - Coefficienti non-zero → barplot (feature importance).
 
 #### 4.1.4 Modello 3 — Random Forest Regressor
-- `n_estimators` fisso per ora.
+- Parametri di default. **Resta come baseline non-ottimizzato** (in §5 si ottimizza solo XGBoost).
 - Feature importances → barplot.
 
-#### 4.1.5 Modello 4 — XGBoost (oppure LightGBM)
+#### 4.1.5 Modello 4 — XGBoost
 
 ```python
 from xgboost import XGBRegressor
 ```
 
-- Parametri di default come baseline.
+- Parametri di default come baseline. **Modello scelto per l'ottimizzazione in §5.**
 
 #### 4.1.6 Confronto Price Prediction
-- Tabella comparativa: Modello | MAE | RMSE | R² | Tempo fit
-- Barplot comparativo R²
+- Tabella comparativa: Modello | MAE | RMSE | R² | Tempo fit.
+- Barplot comparativo R².
 
 ---
 
 ### 4.2 Task B — Occupancy Regression
 
-> NOTA: stessa batteria di modelli di §4.1 → enfatizza il confronto cross-task alla fine.
+> **Input**: stesse feature di §4.1 **escludendo** `price`, `estimated_revenue_l365d`, `availability_*`, `number_of_reviews*` (data leakage diretto sul target).
+> **Target**: `estimated_occupancy_l365d`.
+> **Split**: random 80/20.
+> **Pipeline**: identica a §4.1.
 
 - **4.2.1** Modello 1 — Ridge (baseline)
 - **4.2.2** Modello 2 — LASSO
-- **4.2.3** Modello 3 — Random Forest
-- **4.2.4** Modello 4 — XGBoost (oppure LightGBM)
+- **4.2.3** Modello 3 — Random Forest *(baseline non-ottimizzato)*
+- **4.2.4** Modello 4 — XGBoost *(scelto per ottimizzazione in §5)*
 
 #### 4.2.5 Confronto Occupancy Regression
 - Stessa tabella comparativa di §4.1.6.
@@ -194,12 +194,22 @@ from xgboost import XGBRegressor
 
 ---
 
-### 4.3 Task C — NLP Classification (Sentiment / Topic)
+### 4.3 Task C — NLP Classification (Sentiment)
+
+> **Input**: campo `comments` di `reviews.csv`.
+> **Target**: label di sentiment derivata dal `review_scores_rating` del listing associato (join `reviews.listing_id` ⨝ `listings.id`):
+>  - `≥ 4.6` → **positivo**
+>  - `3.5 – 4.6` → **neutro**
+>  - `< 3.5` → **negativo**
+>
+> **Split**: 80/20 **stratificato** sulla label.
+> **Pipeline**: `[TfidfVectorizer → Classifier]`.
 
 #### 4.3.1 Preprocessing testo
-- Aggregazione recensioni per listing.
-- TF-IDF vectorization (`TfidfVectorizer`).
-- `X` = matrice TF-IDF, `y` = label (sentimento / categoria dominante).
+- Join `reviews.csv` ⨝ `listings.csv[["id", "review_scores_rating"]]` su `listing_id`.
+- Eventuale filtro lingua (`langdetect`) — i commenti sono multilingua.
+- Lowercase, rimozione punteggiatura, stopwords (italiano + inglese).
+- TF-IDF: `max_features ≈ 10k`, `ngram_range=(1, 2)`.
 
 #### 4.3.2 Modello 1 — Naive Bayes (`MultinomialNB`)
 Baseline NLP.
@@ -210,13 +220,18 @@ Baseline NLP.
 
 > *[opzionale]* Modello 4 — LDA / NMF topic modeling (unsupervised).
 
-#### 4.3.5 Metriche classificazione
-- Accuracy, F1-macro, Confusion Matrix.
-- Se classi sbilanciate → Precision-Recall curve.
+#### 4.3.5 Bilanciamento classi *(specifico di questo task)*
+La label di sentiment è quasi certamente sbilanciata (i rating Airbnb si concentrano ≥4.5). Strategie:
+- `class_weight="balanced"` su `LogisticRegression` / `LinearSVC`.
+- Eventualmente `SMOTE` su rappresentazione TF-IDF (attenzione al costo memoria su matrici sparse).
 
-#### 4.3.6 Connessione con i task di regressione
-- Aggiungi la colonna `category` / `sentiment_score` come nuova feature.
-- Ri-addestra un modello di Price Prediction con questa feature aggiuntiva.
+#### 4.3.6 Metriche classificazione
+- Accuracy, **F1-macro** (più robusto su classi sbilanciate), Confusion Matrix.
+- Precision-Recall curve per classe minoritaria.
+
+#### 4.3.7 Connessione con i task di regressione
+- Aggrega per `listing_id` la `sentiment_score` predetta (% recensioni positive).
+- Aggiungi `sentiment_score` come feature in §4.1 / §4.2 e ri-addestra.
 - Confronto R²: prima vs dopo — il NLP ha migliorato la regressione?
 
 ---
@@ -224,14 +239,17 @@ Baseline NLP.
 ### 4.4 Task D — Recommendation System
 
 #### 4.4.1 Costruzione matrice utente-listing
-- `reviewer_id × listing_id` con rating (score recensione).
-- Analisi sparsità della matrice.
+`reviews.csv` **non contiene un rating numerico esplicito**. Tre alternative per derivarlo:
+- **Opzione A (preferita)**: usa lo `sentiment_score` predetto dal modello §4.3 sul singolo `comments` come rating 1-5.
+- **Opzione B**: usa `review_scores_rating` del listing come rating uniforme per ogni reviewer di quel listing (rumoroso ma immediato).
+- **Opzione C**: rating implicito 0/1 (presenza di recensione) → solo Content-Based.
+
+Risultato: matrice `reviewer_id × listing_id` con il rating derivato. Analisi sparsità.
 
 #### 4.4.2 Approccio 1 — Content-Based Filtering
-- Vettore listing: feature strutturali + TF-IDF NLP + zona.
+- Vettore listing: feature strutturali OHE + TF-IDF della `description` + zona.
 - Similarità coseno tra listing.
-- Dato un utente → media dei vettori dei listing recensiti positivamente.
-- Top-N listing più simili non ancora visitati.
+- Per un utente → media dei vettori dei listing recensiti positivamente → top-N più simili non ancora visitati.
 
 #### 4.4.3 Approccio 2 — Collaborative Filtering (User-Based / Item-Based)
 
@@ -251,7 +269,7 @@ from surprise import SVD
 - Confronto con KNN-based.
 
 #### 4.4.5 Confronto Recommendation
-- Tabella: Approccio | RMSE | MAE (surprise metrics).
+- Tabella: Approccio | RMSE | MAE.
 - Esempio qualitativo: per un utente campione, mostra top-5 raccomandazioni.
 
 ---
@@ -260,8 +278,8 @@ from surprise import SVD
 
 ### 5.1 Task A — Price Prediction
 
-#### 5.1.1 Modello scelto per ottimizzazione: XGBoost
-> Motivazione: scegliere il modello con le migliori performance baseline in §4.1.6 *e* il maggior numero di iperparametri impattanti.
+#### 5.1.1 Modello scelto: XGBoost
+> **Motivazione**: XGBoost è notoriamente uno dei modelli con migliori performance baseline su problemi tabellari di regressione, e i suoi iperparametri principali (`max_depth`, `learning_rate`, `n_estimators`, `subsample`, `reg_alpha/lambda`) hanno un impatto sostanziale e ben documentato sulle metriche, giustificando il costo della search rispetto a modelli con search space meno informativo.
 
 #### 5.1.2 Search Space
 
@@ -292,8 +310,8 @@ inner_cv = KFold(n_splits=3)
 ---
 
 ### 5.2 Task B — Occupancy Regression
+- Modello scelto: **XGBoost** (stessa motivazione di §5.1.1).
 - Stesso schema di §5.1 — riusa la funzione di search.
-- Modello scelto: *[stesso o diverso, motivare]*.
 - Confronto best model occupancy vs best model price (gli iperparametri ottimali divergono?).
 
 ---
@@ -340,15 +358,17 @@ param_grid = {
 | Task                  | Modello migliore       | Metrica principale | Valore |
 |-----------------------|------------------------|--------------------|--------|
 | Price Prediction      | XGBoost ottimizzato    | RMSE               | X.XX   |
-| Occupancy Regression  | …                      | R²                 | X.XX   |
-| NLP Classification    | …                      | F1                 | X.XX   |
+| Occupancy Regression  | XGBoost ottimizzato    | R²                 | X.XX   |
+| NLP Classification    | …                      | F1-macro           | X.XX   |
 | Recommendation        | SVD ottimizzato        | RMSE               | X.XX   |
 
 ### 6.2 Cross-Task Insights
-- Come il NLP ha migliorato la regressione?
+- Come il `sentiment_score` da §4.3 ha migliorato la regressione?
 - Feature più importanti in comune tra price e occupancy?
+- Il rating derivato in §4.4 (Opzione A vs B) cambia significativamente l'output del recommender?
 
 ### 6.3 Limiti e Sviluppi Futuri
-- Dataset limitato / bias nella raccolta dati.
-- Feature aggiuntive che potrebbero migliorare il modello.
-- Possibili approcci alternativi (deep learning, ensemble, ecc.).
+- `calendar.csv` corrotto → impossibile analisi temporale fine dei prezzi.
+- Dataset Milano-only: non generalizza ad altre città.
+- `reviews.csv` senza rating numerico → ratings derivati introducono rumore.
+- Possibili approcci alternativi: deep learning (BERT per NLP), LightGBM, ensemble stacking.
