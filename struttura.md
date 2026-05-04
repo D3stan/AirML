@@ -2,7 +2,18 @@
 
 ## 0. Setup e Caricamento Librerie
 
-### 0.1 Import
+### 0.1 Struttura dei dati
+- Dataset principale: `listings.csv` (dati strutturati su alloggi).
+    `id,listing_url,scrape_id,last_scraped,source,name,description,neighborhood_overview,picture_url,host_id,host_url,host_name,host_since,host_location,host_about,host_response_time,host_response_rate,host_acceptance_rate,host_is_superhost,host_thumbnail_url,host_picture_url,host_neighbourhood,host_listings_count,host_total_listings_count,host_verifications,host_has_profile_pic,host_identity_verified,neighbourhood,neighbourhood_cleansed,neighbourhood_group_cleansed,latitude,longitude,property_type,room_type,accommodates,bathrooms,bathrooms_text,bedrooms,beds,amenities,price,minimum_nights,maximum_nights,minimum_minimum_nights,maximum_minimum_nights,minimum_maximum_nights,maximum_maximum_nights,minimum_nights_avg_ntm,maximum_nights_avg_ntm,calendar_updated,has_availability,availability_30,availability_60,availability_90,availability_365,calendar_last_scraped,number_of_reviews,number_of_reviews_ltm,number_of_reviews_l30d,availability_eoy,number_of_reviews_ly,estimated_occupancy_l365d,estimated_revenue_l365d,first_review,last_review,review_scores_rating,review_scores_accuracy,review_scores_cleanliness,review_scores_checkin,review_scores_communication,review_scores_location,review_scores_value,license,instant_bookable,calculated_host_listings_count,calculated_host_listings_count_entire_homes,calculated_host_listings_count_private_rooms,calculated_host_listings_count_shared_rooms,reviews_per_month`
+    `23986,https://www.airbnb.com/rooms/23986,20250922033939,2025-09-24,city scrape,""" Characteristic Milanese flat""",I look forward to welcoming you in my flat; it is suitable for couples and groups of up to 4 people,,https://a0.muscache.com/pictures/623d63f8-56cf-4bd0-af95-fb50c5abf6af.jpg,95941,https://www.airbnb.com/users/show/95941,Jeremy,2010-03-19,"Milan, Italy","Hallo , I'm Jeremy Hayne I live in Milan and I'm a freelance translator and archaeologist. I look forward to hosting you in my comfortable Milan flat and am happy to answer any questions you have. ",N/A,N/A,0%,f,https://a0.muscache.com/im/users/95941/profile_pic/1299938878/original.jpg?aki_policy=profile_small,https://a0.muscache.com/im/users/95941/profile_pic/1299938878/original.jpg?aki_policy=profile_x_medium,Navigli,1,1,['email'],t,t,,NAVIGLI,,45.44806,9.17373,Entire rental unit,Entire home/apt,4,1.0,1 bath,1,1,"[""Paid parking off premises"", ""Dedicated workspace"", ""Iron"", ""Hair dryer"", ""Dishes and silverware"", ""TV"", ""Kitchen"", ""Washer"", ""Essentials"", ""Bed linens"", ""Long term stays allowed"", ""Extra pillows and blankets"", ""Hot water"", ""Hangers"", ""Fast wifi \u2013 92 Mbps"", ""Heating"", ""Cooking basics"", ""Indoor fireplace""]",$180.00,31,730,31,31,730,730,31.0,730.0,,t,28,57,87,362,2025-09-24,26,0,0,96,1,0,0,2012-04-24,2024-04-20,4.64,4.65,4.19,4.58,4.73,4.69,4.46,,f,1,1,0,0,0.16`
+- Dataset secondario: `reviews.csv` (recensioni testuali).
+    `listing_id,id,date,reviewer_id,reviewer_name,comments`
+    `4828862,28455010,2015-03-23,13886887,Francesco,"Tutto perfetto, appartamento pulito e in ordine."`
+- Dataset terziario: `calendar.csv` (disponibilità e prezzi giornalieri).
+    `listing_id,date,available,price,adjusted_price,minimum_nights,maximum_nights`
+    `4828862,2025-09-24,f,,,1,30`
+
+### 0.2 Import
 
 ```python
 # numpy, pandas, matplotlib, seaborn
@@ -10,7 +21,7 @@
 # eventuali librerie extra: xgboost, lightgbm, imbalanced-learn...
 ```
 
-### 0.2 Caricamento Dataset
+### 0.3 Caricamento Dataset
 
 ```python
 # pd.read_csv() / API / download automatico
