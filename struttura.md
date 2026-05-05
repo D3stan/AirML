@@ -51,14 +51,15 @@ Variabili-chiave di `listings.csv`:
 - **Numeriche**: `price` (string `$180.00` → float), `accommodates`, `bathrooms`, `bedrooms`, `beds`, `minimum_nights`, `availability_{30,60,90,365}`, `number_of_reviews*`, `review_scores_*`, `reviews_per_month`, `estimated_occupancy_l365d`, `estimated_revenue_l365d`, `latitude`, `longitude`.
 - **Categoriche**: `room_type`, `property_type`, `neighbourhood_cleansed`, `host_response_time`, `host_is_superhost`, `instant_bookable`, `has_availability`.
 - **Liste / testuali**: `amenities` (JSON list), `description`, `host_about`, `name`, `neighborhood_overview`.
-- **Identificatori da rimuovere**: `id`, `listing_url`, `scrape_id`, `host_id`, `host_url`, `picture_url`, `host_thumbnail_url`, `host_picture_url`, `host_name`, `reviewer_name`.
+- **Identificatori da rimuovere**: `listing_url`, `scrape_id`, `host_id`, `host_url`, `picture_url`, `host_thumbnail_url`, `host_picture_url`, `host_name`, `reviewer_name`.
 - **Target**: `price` (Task A), `estimated_occupancy_l365d` (Task B); per Task C/D vedi §4.3 e §4.4.
 
 ### 1.4 Prima Scrematura
 
 ```python
 # Parsing tipi: price "$180.00" -> float; amenities '[...]' -> list; date -> datetime
-# Drop ID/URL/immagini (vedi 1.3)
+# Drop URL/immagini (vedi 1.3)
+# Operazioni sul dataframe
 # df.isnull().sum() — drop colonne con >X% null (es. license, neighbourhood_group_cleansed)
 # df.duplicated().sum() — drop duplicati
 ```
@@ -78,10 +79,10 @@ Variabili-chiave di `listings.csv`:
 ### 2.2 Distribuzione delle Variabili Target
 - **Price (4.1)**: istogramma + log-transform (price è tipicamente skew-positivo).
 - **Occupancy (4.2)**: istogramma di `estimated_occupancy_l365d`.
-- **Sentiment label (4.3)**: barplot della label derivata — verificare sbilanciamento.
+- **Sentiment label (4.3)**: barplot del `review_scores_rating`.
 
 ### 2.3 Distribuzione delle Feature
-- Istogrammi delle numeriche (subplot grid).
+- Istogrammi delle variabili numeriche (subplot grid).
 - Barplot top-N per `neighbourhood_cleansed`, `property_type`.
 - Boxplot per evidenziare outlier su `price`, `minimum_nights`.
 
@@ -89,7 +90,7 @@ Variabili-chiave di `listings.csv`:
 - Scatter `accommodates` / `beds` / `bathrooms` vs `price`.
 - Boxplot `price` per `room_type` e per `neighbourhood_cleansed`.
 - Heatmap correlazione numeriche (focus su `price` e `estimated_occupancy_l365d`).
-- Mappa lat/long colorata per prezzo (Milano).
+- Mappa neighbourhood colorata per prezzo (opzionale).
 
 ### 2.5 Commento dei Risultati EDA
 - Osservazioni chiave: distribuzioni, outlier, correlazioni notevoli.
@@ -107,7 +108,7 @@ Variabili-chiave di `listings.csv`:
 - Da `last_review` / `first_review` → `review_span_days`, `days_since_last_review`.
 - Da `bathrooms_text` → `is_shared_bath` (booleano).
 - Da `amenities` (lista) → `n_amenities`, flag binari per amenities top-N (`wifi`, `kitchen`, `washer`, ...).
-- Da `latitude`/`longitude` → distanza dal centro città (Duomo).
+- Opzionale: Da `latitude`/`longitude` → distanza dal centro città (Duomo).
 
 ### 3.2 Gestione Valori Nulli
 - Imputation per colonna: mediana per numeriche, moda per categoriche, sentinel `"Unknown"` per testuali.
@@ -123,6 +124,10 @@ Variabili-chiave di `listings.csv`:
 | 4.4  | `reviews.csv` × `listings.csv`    | rating derivato (vedi §4.4.1)   | —                       | —            | `surprise.model_selection`     |
 
 > Concettualmente: §3.1 e §3.2 girano una volta sola sul dataframe pulito; poi ogni task in §4 si costruisce il proprio `(X, y)`, applica lo split appropriato e il preprocessing (encoding/scaling/vectorization) **dentro una `Pipeline` sklearn** per evitare leakage.
+
+### 3.4 Traduzione testi
+- in una sola lingua (italiano o inglese)
+- oppure mantenere multilingua e lasciare che il modello NLP impari da tutte (con eventuale indicatore di lingua come feature)
 
 ---
 
@@ -155,11 +160,15 @@ def regression_metrics(name, model, X_test, y_test):
 - Stessa struttura, focus su feature selection implicita.
 - Coefficienti non-zero → barplot (feature importance).
 
-#### 4.1.4 Modello 3 — Random Forest Regressor
+#### 4.1.4 Modello 3 — Kernel Ridge Regression
+- Opzionale
+- note
+
+#### 4.1.5 Modello 4 — Random Forest Regressor
 - Parametri di default. **Resta come baseline non-ottimizzato** (in §5 si ottimizza solo XGBoost).
 - Feature importances → barplot.
 
-#### 4.1.5 Modello 4 — XGBoost
+#### 4.1.6 Modello 5 — XGBoost
 
 ```python
 from xgboost import XGBRegressor
@@ -240,8 +249,8 @@ La label di sentiment è quasi certamente sbilanciata (i rating Airbnb si concen
 
 #### 4.4.1 Costruzione matrice utente-listing
 `reviews.csv` **non contiene un rating numerico esplicito**. Tre alternative per derivarlo:
-- **Opzione A (preferita)**: usa lo `sentiment_score` predetto dal modello §4.3 sul singolo `comments` come rating 1-5.
-- **Opzione B**: usa `review_scores_rating` del listing come rating uniforme per ogni reviewer di quel listing (rumoroso ma immediato).
+- **Opzione A**: usa lo `sentiment_score` predetto dal modello §4.3 sul singolo `comments` come rating 1-5.
+- **Opzione B (preferita)**: usa `review_scores_rating` del listing come rating uniforme per ogni reviewer di quel listing (rumoroso ma immediato).
 - **Opzione C**: rating implicito 0/1 (presenza di recensione) → solo Content-Based.
 
 Risultato: matrice `reviewer_id × listing_id` con il rating derivato. Analisi sparsità.
@@ -296,7 +305,7 @@ param_grid = {
 - `cv=5`, `scoring="neg_root_mean_squared_error"`.
 - Estrarre `best_params_`, `best_score_`.
 
-#### 5.1.4 *[Facoltativo]* Nested Cross-Validation
+#### 5.1.4 Nested Cross-Validation
 
 ```python
 outer_cv = KFold(n_splits=5)
@@ -369,6 +378,5 @@ param_grid = {
 
 ### 6.3 Limiti e Sviluppi Futuri
 - `calendar.csv` corrotto → impossibile analisi temporale fine dei prezzi.
-- Dataset Milano-only: non generalizza ad altre città.
 - `reviews.csv` senza rating numerico → ratings derivati introducono rumore.
 - Possibili approcci alternativi: deep learning (BERT per NLP), LightGBM, ensemble stacking.
