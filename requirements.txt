@@ -1,0 +1,23 @@
+# Requirements for AirML project (core and optional tools)
+numpy
+pandas
+matplotlib
+seaborn
+scikit-learn
+wheel
+# xgboost
+# imbalanced-learn
+# scikit-surprise
+# langdetect
+# nltk
+# spacy
+# joblib
+scipy
+# tqdm
+# jupyter
+ipykernel
+
+# Optional / useful extras
+# lightgbm
+# gensim
+# sentence-transformers
