@@ -5,6 +5,7 @@ matplotlib
 seaborn
 scikit-learn
 wheel
+requests
 # xgboost
 # imbalanced-learn
 # scikit-surprise
