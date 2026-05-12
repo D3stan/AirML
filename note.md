@@ -6,6 +6,9 @@
 
 
 - partiamo solo con i task A, B e D.
+- task A -> Nico
+- task B -> Tod
+- task D -> Ale
 - cecca si occupa di progettare la webapp
 
 - scrematura fa una persona (nico, ale o tod)
