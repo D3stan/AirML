@@ -24,8 +24,17 @@
 ### 0.3 Caricamento Dataset
 
 ```python
-# listings_df = pd.read_csv("listings.csv")
-# reviews_df  = pd.read_csv("reviews.csv")
+COLS_TO_DROP = {
+    "listing_url", "scrape_id", "host_url", "picture_url",
+    "host_thumbnail_url", "host_picture_url",
+    # aggiungi qui le altre URL/identificatori
+}
+
+listings_df = pd.read_csv(
+    "listings.csv",
+    usecols=lambda col: col not in COLS_TO_DROP
+)
+reviews_df  = pd.read_csv("reviews.csv")
 # calendar.csv NON caricato (vedi §0.1).
 # df.head(), df.shape, df.info(memory_usage="deep")
 ```
@@ -48,20 +57,21 @@ Quattro task predittivi sui dati Airbnb (Milano, scrape 2025-09-22):
 
 ### 1.3 Descrizione delle Variabili
 Variabili-chiave di `listings.csv`:
-- **Numeriche**: `price` (string `$180.00` → float), `accommodates`, `bathrooms`, `bedrooms`, `beds`, `minimum_nights`, `availability_{30,60,90,365}`, `number_of_reviews*`, `review_scores_*`, `reviews_per_month`, `estimated_occupancy_l365d`, `estimated_revenue_l365d`, `latitude`, `longitude`.
+- **Numeriche**: `price` (string `$180.00` → int), `accommodates`, `bathrooms`, `bedrooms`, `beds`, `minimum_nights`, `availability_{30,60,90,365}`, `number_of_reviews*`, `review_scores_*`, `reviews_per_month`, `estimated_occupancy_l365d`, `estimated_revenue_l365d`, `latitude`, `longitude`.
 - **Categoriche**: `room_type`, `property_type`, `neighbourhood_cleansed`, `host_response_time`, `host_is_superhost`, `instant_bookable`, `has_availability`.
-- **Liste / testuali**: `amenities` (JSON list), `description`, `host_about`, `name`, `neighborhood_overview`.
+- **Liste / testuali**: `amenities` (boolean list), `description`, `host_about`, `name`, `neighborhood_overview`.
 - **Identificatori da rimuovere**: `listing_url`, `scrape_id`, `host_id`, `host_url`, `picture_url`, `host_thumbnail_url`, `host_picture_url`, `host_name`, `reviewer_name`.
 - **Target**: `price` (Task A), `estimated_occupancy_l365d` (Task B); per Task C/D vedi §4.3 e §4.4.
 
 ### 1.4 Prima Scrematura
 
 ```python
-# Parsing tipi: price "$180.00" -> float; amenities '[...]' -> list; date -> datetime
 # Drop URL/immagini (vedi 1.3)
-# Operazioni sul dataframe
-# df.isnull().sum() — drop colonne con >X% null (es. license, neighbourhood_group_cleansed)
-# df.duplicated().sum() — drop duplicati
+# Drop righe duplicate
+# Drop righe con valori nulli di:
+#   - price
+#   - oppure con piu del 70% di valori nulli
+#   - accommodates
 ```
 
 ---
@@ -104,6 +114,8 @@ Variabili-chiave di `listings.csv`:
 > Questa sezione contiene la **pulizia condivisa** applicata a `listings.csv` (e join con `reviews.csv` per i task NLP/recommendation). **Split, encoding e scaling sono per-task** e vivono dentro le rispettive sezioni di §4 — vedi la tabella in §3.3.
 
 ### 3.1 Feature Engineering
+- Parsing tipi: `price` "$180.00" → int.
+- Da `property_type` → enum (stessa cosa per altri `_type`?)
 - Da `host_since` → `host_tenure_days` (giorni di esperienza host).
 - Da `last_review` / `first_review` → `review_span_days`, `days_since_last_review`.
 - Da `bathrooms_text` → `is_shared_bath` (booleano).
