@@ -25,9 +25,15 @@
 
 ```python
 COLS_TO_DROP = {
-    "listing_url", "scrape_id", "host_url", "picture_url",
+    # URL / immagini
+    "listing_url", "host_url", "picture_url",
     "host_thumbnail_url", "host_picture_url",
-    # aggiungi qui le altre URL/identificatori
+    # Identificatori di scraping / metadati tecnici
+    "scrape_id", "last_scraped", "source",
+    # Identificatori personali / host
+    "host_id", "host_name",
+    # Colonne vuote o quasi sempre nulle / non predittive
+    "calendar_updated", "calendar_last_scraped", "license",
 }
 
 listings_df = pd.read_csv(
@@ -71,7 +77,7 @@ Variabili-chiave di `listings.csv`:
 # Drop righe con valori nulli di:
 #   - price
 #   - oppure con piu del 70% di valori nulli
-#   - accommodates
+#   - accommodates < 1
 ```
 
 ---
