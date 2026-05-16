@@ -25,9 +25,25 @@
 
 ```python
 COLS_TO_DROP = {
-    "listing_url", "scrape_id", "host_url", "picture_url",
-    "host_thumbnail_url", "host_picture_url",
-    # aggiungi qui le altre URL/identificatori
+    # URL / immagini
+    "picture_url", "host_thumbnail_url", "host_picture_url", "host_url",
+    # Testuali / identificativi listing
+    "name", "description", "neighborhood_overview",
+    # Identificatori di scraping / metadati tecnici
+    "scrape_id", "last_scraped", "source",
+    # Identificatori personali / dati host
+    "host_id", "host_name", "host_since", "host_location", "host_about",
+    "host_neighbourhood", "host_listings_count", "host_total_listings_count",
+    "host_verifications", "host_has_profile_pic", "host_identity_verified",
+    # Metriche risposta host
+    "host_response_time", "host_response_rate", "host_acceptance_rate", "host_is_superhost",
+    # Location duplicate / non predittive
+    "neighbourhood", "neighbourhood_group_cleansed",
+    # Testo derivabile / calcolato
+    "bathrooms_text", "first_review", "last_review",
+    # Calcolati host (aggregati)
+    "calculated_host_listings_count", "calculated_host_listings_count_entire_homes",
+    "calculated_host_listings_count_private_rooms", "calculated_host_listings_count_shared_rooms",
 }
 
 listings_df = pd.read_csv(
@@ -71,7 +87,7 @@ Variabili-chiave di `listings.csv`:
 # Drop righe con valori nulli di:
 #   - price
 #   - oppure con piu del 70% di valori nulli
-#   - accommodates
+#   - accommodates < 1
 ```
 
 ---
