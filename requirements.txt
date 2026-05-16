@@ -6,6 +6,7 @@ seaborn
 scikit-learn
 wheel
 requests
+nbstripout
 # xgboost
 # imbalanced-learn
 # scikit-surprise
