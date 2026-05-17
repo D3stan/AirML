@@ -18,6 +18,7 @@ scipy
 # tqdm
 # jupyter
 ipykernel
+nbdime
 
 # Optional / useful extras
 # lightgbm
