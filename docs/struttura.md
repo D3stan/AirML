@@ -18,7 +18,7 @@
 ```python
 # numpy, pandas, matplotlib, seaborn
 # sklearn (models, metrics, preprocessing, model_selection)
-# eventuali librerie extra: xgboost, imbalanced-learn, surprise, langdetect...
+# eventuali librerie extra: xgboost, vaderSentiment, scipy.sparse...
 ```
 
 ### 0.3 Caricamento Dataset
@@ -60,11 +60,10 @@ reviews_df  = pd.read_csv("reviews.csv")
 ## 1. Descrizione del Contesto
 
 ### 1.1 Obiettivo
-Quattro task predittivi sui dati Airbnb (Milano, scrape 2025-09-22):
+Due task predittivi sui dati Airbnb (Milano, scrape 2025-09-22), arricchiti da una pipeline di feature engineering basata sulle recensioni:
 - **Task A — Regressione**: predire il `price` di un alloggio.
 - **Task B — Regressione**: predire l'occupancy stimata annua (`estimated_occupancy_l365d`).
-- **Task C — Classificazione (NLP)**: classificare il sentiment delle recensioni.
-- **Task D — Recommendation**: suggerire alloggi a un utente.
+- **Task D — Review Intelligence Pipeline**: estrarre feature strutturate da 283 MB di testo recensioni (sentiment, topic modeling, aspetti, segnali temporali) e integrarle nei Task A e B.
 
 ### 1.2 Fonte e Struttura del Dataset
 - **`listings.csv`** (~75 colonne, una riga per alloggio): anagrafica alloggio, host, location, prezzo, amenities, score recensioni aggregati, occupancy stimata.
@@ -77,7 +76,7 @@ Variabili-chiave di `listings.csv`:
 - **Categoriche**: `room_type`, `property_type`, `neighbourhood_cleansed`, `host_response_time`, `host_is_superhost`, `instant_bookable`, `has_availability`.
 - **Liste / testuali**: `amenities` (boolean list), `description`, `host_about`, `name`, `neighborhood_overview`.
 - **Identificatori da rimuovere**: `listing_url`, `scrape_id`, `host_id`, `host_url`, `picture_url`, `host_thumbnail_url`, `host_picture_url`, `host_name`, `reviewer_name`.
-- **Target**: `price` (Task A), `estimated_occupancy_l365d` (Task B); per Task C/D vedi §4.3 e §4.4.
+- **Target**: `price` (Task A), `estimated_occupancy_l365d` (Task B); Task D è una pipeline di feature engineering senza target proprio (vedi §4.3).
 
 ### 1.4 Prima Scrematura
 
@@ -105,7 +104,6 @@ Variabili-chiave di `listings.csv`:
 ### 2.2 Distribuzione delle Variabili Target
 - **Price (4.1)**: istogramma + log-transform (price è tipicamente skew-positivo).
 - **Occupancy (4.2)**: istogramma di `estimated_occupancy_l365d`.
-- **Sentiment label (4.3)**: barplot del `review_scores_rating`.
 
 ### 2.3 Distribuzione delle Feature
 - Istogrammi delle variabili numeriche (subplot grid).
@@ -127,35 +125,107 @@ Variabili-chiave di `listings.csv`:
 
 ## 3. Preparazione Base dei Dati
 
-> Questa sezione contiene la **pulizia condivisa** applicata a `listings.csv` (e join con `reviews.csv` per i task NLP/recommendation). **Split, encoding e scaling sono per-task** e vivono dentro le rispettive sezioni di §4 — vedi la tabella in §3.3.
+> Questa sezione contiene la **pulizia condivisa** applicata a `listings.csv` (e join con `reviews.csv` per la Review Intelligence Pipeline). **Split, encoding e scaling sono per-task** e vivono dentro le rispettive sezioni di §4 — vedi la tabella in §3.3.
 
-### 3.1 Feature Engineering
+### 3.1 Feature Engineering — Strutturali
 - Parsing tipi: `price` "$180.00" → int.
 - Da `property_type` → enum (stessa cosa per altri `_type`?)
 - Da `host_since` → `host_tenure_days` (giorni di esperienza host).
 - Da `last_review` / `first_review` → `review_span_days`, `days_since_last_review`.
 - Da `bathrooms_text` → `is_shared_bath` (booleano).
-- Da `amenities` (lista) → `n_amenities`, flag binari per amenities top-N (`wifi`, `kitchen`, `washer`, ...).
+- Da `amenities` (lista) → `n_amenities` (conteggio totale) + cluster macro-categoria (vedi §3.2).
 - Opzionale: Da `latitude`/`longitude` → distanza dal centro città (Duomo).
 
-### 3.2 Gestione Valori Nulli
+### 3.2 Feature Engineering — Amenity Clustering
+
+> La colonna `amenities` contiene una lista JSON di stringhe free-text. Il one-hot encoding di tutti i valori unici produrrebbe **16.000+ colonne sparse** che degradano le performance e l'interpretabilità dei modelli. Raggruppiamo in **15 macro-categorie** tramite keyword matching.
+
+```python
+AMENITY_CLUSTERS = {
+    # ── Cucina ──
+    "has_full_kitchen":      ["kitchen", "oven", "stove", "microwave", "fridge",
+                              "refrigerator", "dishwasher", "coffee", "cooking"],
+    # ── Intrattenimento ──
+    "has_entertainment":     ["tv", "netflix", "chromecast", "game console",
+                              "books", "board game", "sound system", "streaming"],
+    # ── Clima ──
+    "has_climate_control":   ["air conditioning", "ac", "heating", "central heating",
+                              "fan", "portable heater", "radiator"],
+    # ── Essenziali ospite ──
+    "has_essentials":        ["essentials", "bed linens", "towels", "shampoo",
+                              "soap", "toilet paper", "hangers"],
+    # ── Lusso / Premium ──
+    "has_luxury":            ["pool", "gym", "hot tub", "jacuzzi", "sauna",
+                              "rooftop", "doorman", "concierge", "garden", "terrace"],
+    # ── Workspace ──
+    "has_workspace":         ["workspace", "dedicated workspace", "desk", "monitor",
+                              "office", "laptop friendly"],
+    # ── Connettività ──
+    "has_fast_wifi":         ["wifi", "fast wifi", "ethernet", "internet"],
+    # ── Lavanderia ──
+    "has_laundry":           ["washer", "dryer", "iron", "ironing board",
+                              "laundry", "clothes rack"],
+    # ── Sicurezza ──
+    "has_safety":            ["smoke alarm", "carbon monoxide", "fire extinguisher",
+                              "first aid", "lock", "security camera"],
+    # ── Parcheggio e Trasporti ──
+    "has_parking":           ["parking", "garage", "bike", "bicycle", "ev charger"],
+    # ── Spazi esterni ──
+    "has_outdoor_space":     ["balcony", "patio", "backyard", "bbq", "grill",
+                              "outdoor dining", "garden"],
+    # ── Bambini e Famiglie ──
+    "has_family_friendly":   ["crib", "high chair", "baby", "children",
+                              "baby bath", "baby monitor", "toys"],
+    # ── Accessibilità ──
+    "has_accessibility":     ["elevator", "wheelchair", "accessible", "step-free",
+                              "wide entrance", "grab bar"],
+    # ── Check-in ──
+    "has_self_checkin":      ["self check-in", "lockbox", "keypad", "smart lock",
+                              "door code"],
+    # ── Colazione ──
+    "has_breakfast":         ["breakfast", "cereal", "coffee maker", "espresso",
+                              "tea kettle"],
+}
+
+import json
+
+def parse_amenities(amenity_str):
+    """Parsing della lista JSON di amenities."""
+    try:
+        return [a.lower().strip() for a in json.loads(amenity_str)]
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+def cluster_amenities(amenity_list, clusters):
+    """Restituisce dict di flag booleani per ogni cluster."""
+    text = " | ".join(amenity_list)
+    return {
+        cluster_name: int(any(kw in text for kw in keywords))
+        for cluster_name, keywords in clusters.items()
+    }
+
+# Applicazione al dataframe
+amenity_flags = listings_df["amenities"].apply(
+    lambda x: pd.Series(cluster_amenities(parse_amenities(x), AMENITY_CLUSTERS))
+)
+listings_df = pd.concat([listings_df.drop(columns=["amenities"]), amenity_flags], axis=1)
+```
+
+**Output**: 15 nuove colonne booleane in sostituzione della colonna `amenities` raw. Si mantiene `n_amenities` (conteggio totale) come feature numerica aggiuntiva.
+
+### 3.3 Gestione Valori Nulli
 - Imputation per colonna: mediana per numeriche, moda per categoriche, sentinel `"Unknown"` per testuali.
 - Drop righe con target nullo (per il task corrispondente).
 
-### 3.3 Pipeline per-task — vista d'insieme
+### 3.4 Pipeline per-task — vista d'insieme
 
 | Task | Sorgente                          | Target                          | Encoding                | Scaling      | Split                          |
 |------|-----------------------------------|---------------------------------|-------------------------|--------------|--------------------------------|
-| 4.1  | `listings.csv`                    | `price`                         | OHE su categoriche      | StandardScaler | random 80/20                  |
-| 4.2  | `listings.csv`                    | `estimated_occupancy_l365d`     | OHE su categoriche      | StandardScaler | random 80/20                  |
-| 4.3  | `reviews.csv` ⨝ `listings.csv`    | sentiment label (da `review_scores_rating`) | TF-IDF su `comments` | —          | **stratified** 80/20           |
-| 4.4  | `reviews.csv` × `listings.csv`    | rating derivato (vedi §4.4.1)   | —                       | —            | `surprise.model_selection`     |
+| 4.1 (A) | `listings_enriched`            | `price`                         | OHE su categoriche      | StandardScaler | random 80/20                  |
+| 4.2 (B) | `listings_enriched`            | `estimated_occupancy_l365d`     | OHE su categoriche      | StandardScaler | random 80/20                  |
+| 4.3 (D) | `reviews.csv` ⨝ `listings.csv` | *nessun target — solo feature engineering* | TF-IDF, VADER, etc. | —          | —                              |
 
-> Concettualmente: §3.1 e §3.2 girano una volta sola sul dataframe pulito; poi ogni task in §4 si costruisce il proprio `(X, y)`, applica lo split appropriato e il preprocessing (encoding/scaling/vectorization) **dentro una `Pipeline` sklearn** per evitare leakage.
-
-### 3.4 Traduzione testi
-- in una sola lingua (italiano o inglese)
-- oppure mantenere multilingua e lasciare che il modello NLP impari da tutte (con eventuale indicatore di lingua come feature)
+> Concettualmente: §3.1–§3.3 girano una volta sola sul dataframe pulito; poi ogni task in §4 si costruisce il proprio `(X, y)`, applica lo split appropriato e il preprocessing (encoding/scaling/vectorization) **dentro una `Pipeline` sklearn** per evitare leakage. Il Task D (§4.3) non ha split proprio perché è una pipeline di preprocessing, non un task predittivo.
 
 ---
 
@@ -163,7 +233,7 @@ Variabili-chiave di `listings.csv`:
 
 ### 4.1 Task A — Price Prediction (Regressione)
 
-> **Input**: feature numeriche + categoriche di `listings.csv`, **escluse** `estimated_occupancy_l365d`, `estimated_revenue_l365d` (leakage indiretto).
+> **Input**: `listings_enriched` (strutturali + amenity cluster + feature derivate da recensioni), **escluse** `estimated_occupancy_l365d`, `estimated_revenue_l365d` e `peer_avg_price` (leakage).
 > **Target**: `price` (float).
 > **Split**: random 80/20, `random_state=42`.
 > **Pipeline**: `[ColumnTransformer(OHE + StandardScaler) → Estimator]`.
@@ -208,11 +278,32 @@ from xgboost import XGBRegressor
 - Tabella comparativa: Modello | MAE | RMSE | R² | Tempo fit.
 - Barplot comparativo R².
 
+#### 4.1.7 Ablation Study
+
+Addestramento del **modello migliore** (XGBoost) in quattro configurazioni per quantificare il contributo marginale di ogni gruppo di feature NLP:
+
+```python
+feature_sets = {
+    "structural_only":  structural_cols + amenity_cols,
+    "+ sentiment":      structural_cols + amenity_cols + sentiment_cols,
+    "+ topics":         structural_cols + amenity_cols + topic_cols,
+    "+ all_review":     structural_cols + amenity_cols + all_review_cols,
+}
+
+results = {}
+for name, cols in feature_sets.items():
+    pipe = make_pipeline(ColumnTransformer(...), XGBRegressor(**best_params))
+    scores = cross_val_score(pipe, X[cols], y, cv=5, scoring="neg_root_mean_squared_error")
+    results[name] = -scores.mean()
+```
+
+**Output**: barplot dell'RMSE per feature set, che mostra il **contributo marginale di ogni gruppo NLP** alla predizione del prezzo.
+
 ---
 
 ### 4.2 Task B — Occupancy Regression
 
-> **Input**: stesse feature di §4.1 **escludendo** `price`, `estimated_revenue_l365d`, `availability_*`, `number_of_reviews*` (data leakage diretto sul target).
+> **Input**: stesse feature di §4.1 **escludendo** `price`, `estimated_revenue_l365d`, `availability_*`, `number_of_reviews*` (data leakage diretto sul target). **Incluso** `peer_avg_price` (nessun leakage poiché il target è l'occupancy, non il prezzo).
 > **Target**: `estimated_occupancy_l365d`.
 > **Split**: random 80/20.
 > **Pipeline**: identica a §4.1.
@@ -229,85 +320,285 @@ from xgboost import XGBRegressor
 - Quali feature sono importanti per entrambi? Quali divergono?
 - Commento: R² di occupancy sarà probabilmente più basso — spiegare perché.
 
+#### 4.2.7 Ablation Study
+
+Stessa struttura di §4.1.7. L'ablation study per l'occupancy include `peer_avg_price` come esperimento aggiuntivo (nessun leakage poiché il target è l'occupancy, non il prezzo).
+
 ---
 
-### 4.3 Task C — NLP Classification (Sentiment)
+### 4.3 Task D — Review Intelligence Pipeline
 
-> **Input**: campo `comments` di `reviews.csv`.
-> **Target**: label di sentiment derivata dal `review_scores_rating` del listing associato (join `reviews.listing_id` ⨝ `listings.id`):
->  - `≥ 4.6` → **positivo**
->  - `3.5 – 4.6` → **neutro**
->  - `< 3.5` → **negativo**
+> **Obiettivo**: estrarre ogni possibile segnale strutturato da `reviews.csv` e aggregarlo per `listing_id` per creare `nlp_features_df` (~26-33 nuove colonne per listing).
 >
-> **Split**: 80/20 **stratificato** sulla label.
-> **Pipeline**: `[TfidfVectorizer → Classifier]`.
+> A differenza del piano V1, non ci limitiamo al puro NLP. Utilizziamo qualsiasi tecnica che estragga segnale predittivo utile dalle recensioni: NLP, segnali collaborativi, analisi temporale, metadati.
 
-#### 4.3.1 Preprocessing testo
-- Join `reviews.csv` ⨝ `listings.csv[["id", "review_scores_rating"]]` su `listing_id`.
-- Eventuale filtro lingua (`langdetect`) — i commenti sono multilingua.
-- Lowercase, rimozione punteggiatura, stopwords (italiano + inglese).
-- TF-IDF: `max_features ≈ 10k`, `ngram_range=(1, 2)`.
-
-#### 4.3.2 Modello 1 — Naive Bayes (`MultinomialNB`)
-Baseline NLP.
-
-#### 4.3.3 Modello 2 — Logistic Regression su TF-IDF
-
-#### 4.3.4 Modello 3 — SVM (`LinearSVC`)
-
-> *[opzionale]* Modello 4 — LDA / NMF topic modeling (unsupervised).
-
-#### 4.3.5 Bilanciamento classi *(specifico di questo task)*
-La label di sentiment è quasi certamente sbilanciata (i rating Airbnb si concentrano ≥4.5). Strategie:
-- `class_weight="balanced"` su `LogisticRegression` / `LinearSVC`.
-- Eventualmente `SMOTE` su rappresentazione TF-IDF (attenzione al costo memoria su matrici sparse).
-
-#### 4.3.6 Metriche classificazione
-- Accuracy, **F1-macro** (più robusto su classi sbilanciate), Confusion Matrix.
-- Precision-Recall curve per classe minoritaria.
-
-#### 4.3.7 Connessione con i task di regressione
-- Aggrega per `listing_id` la `sentiment_score` predetta (% recensioni positive).
-- Aggiungi `sentiment_score` come feature in §4.1 / §4.2 e ri-addestra.
-- Confronto R²: prima vs dopo — il NLP ha migliorato la regressione?
-
----
-
-### 4.4 Task D — Recommendation System
-
-#### 4.4.1 Costruzione matrice utente-listing
-`reviews.csv` **non contiene un rating numerico esplicito**. Tre alternative per derivarlo:
-- **Opzione A**: usa lo `sentiment_score` predetto dal modello §4.3 sul singolo `comments` come rating 1-5.
-- **Opzione B (preferita)**: usa `review_scores_rating` del listing come rating uniforme per ogni reviewer di quel listing (rumoroso ma immediato).
-- **Opzione C**: rating implicito 0/1 (presenza di recensione) → solo Content-Based.
-
-Risultato: matrice `reviewer_id × listing_id` con il rating derivato. Analisi sparsità.
-
-#### 4.4.2 Approccio 1 — Content-Based Filtering
-- Vettore listing: feature strutturali OHE + TF-IDF della `description` + zona.
-- Similarità coseno tra listing.
-- Per un utente → media dei vettori dei listing recensiti positivamente → top-N più simili non ancora visitati.
-
-#### 4.4.3 Approccio 2 — Collaborative Filtering (User-Based / Item-Based)
+#### 4.3.1 Preprocessing testo (condiviso)
 
 ```python
-from surprise import KNNBasic, KNNWithMeans
+import re
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
+def clean_text(text):
+    """Pulizia base del testo per operazioni NLP."""
+    text = str(text).lower()
+    text = re.sub(r'[^a-záàéèíìóòúùñü\s]', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
+reviews_df["comments_clean"] = reviews_df["comments"].apply(clean_text)
 ```
 
-- Train/test split con `surprise.model_selection`.
-- Metrica: RMSE sul rating predetto.
-
-#### 4.4.4 Approccio 3 — SVD (Matrix Factorization)
+**Gestione lingua — MULTILINGUE** (scelta progettuale):
+- Le recensioni restano nella lingua originale. Nessuno step di traduzione.
+- VADER sarà rumoroso su italiano/altre lingue ma cattura comunque parole connotate e cues di punteggiatura (`!!!`, emoji, maiuscole).
+- TF-IDF gestisce nativamente il testo multilingue — stopwords italiane e inglesi rimosse.
+- Si evita la dipendenza da `deep-translator`/`googletrans` e il costo computazionale su 283 MB di testo.
 
 ```python
-from surprise import SVD
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+
+# Stopwords italiane minimali a supplemento
+ITALIAN_STOPS = {"il", "lo", "la", "le", "gli", "un", "una", "di", "da", "in",
+                 "con", "su", "per", "tra", "fra", "che", "non", "è", "sono",
+                 "molto", "tutto", "questa", "questo", "anche", "più", "ma"}
+COMBINED_STOPS = list(ENGLISH_STOP_WORDS | ITALIAN_STOPS)
 ```
 
-- Confronto con KNN-based.
+#### 4.3.2 Sentiment Analysis (VADER)
 
-#### 4.4.5 Confronto Recommendation
-- Tabella: Approccio | RMSE | MAE.
-- Esempio qualitativo: per un utente campione, mostra top-5 raccomandazioni.
+Sentiment per-review, poi aggregato per listing:
+
+```python
+analyzer = SentimentIntensityAnalyzer()
+
+# Singolo passaggio — estrai tutti gli score in una volta
+scores = reviews_df["comments_clean"].apply(
+    lambda x: analyzer.polarity_scores(x)
+)
+reviews_df["vader_compound"] = scores.apply(lambda s: s["compound"])
+reviews_df["vader_neg"]      = scores.apply(lambda s: s["neg"])
+
+sentiment_agg = reviews_df.groupby("listing_id").agg(
+    sentiment_mean=("vader_compound", "mean"),
+    sentiment_std=("vader_compound", "std"),
+    sentiment_min=("vader_compound", "min"),
+    pct_negative=("vader_compound", lambda x: (x < -0.05).mean()),
+    pct_positive=("vader_compound", lambda x: (x > 0.05).mean()),
+).fillna(0)
+```
+
+**Feature**: 5 colonne 🟢 CORE
+
+| Feature | Intuizione | Tier |
+|---------|------------|------|
+| `sentiment_mean` | Soddisfazione complessiva dal testo | 🟢 Core |
+| `sentiment_std` | Consistenza — alta std = listing polarizzante | 🟢 Core |
+| `sentiment_min` | Peggior recensione — eventi "deal breaker" | 🟢 Core |
+| `pct_negative` | Proporzione esperienze negative | 🟢 Core |
+| `pct_positive` | Proporzione esperienze positive | 🟢 Core |
+
+#### 4.3.3 Topic Modeling (NMF)
+
+Scoperta di topic latenti nell'insieme delle recensioni, poi rappresentazione di ogni listing come distribuzione sui topic:
+
+```python
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import NMF
+
+# Concatena tutte le recensioni per listing in un unico documento
+listing_docs = reviews_df.groupby("listing_id")["comments_clean"].apply(
+    lambda texts: " ".join(texts)
+)
+
+tfidf = TfidfVectorizer(max_features=5000, stop_words=COMBINED_STOPS,
+                         ngram_range=(1, 2), min_df=5)
+tfidf_matrix = tfidf.fit_transform(listing_docs)
+
+N_TOPICS = 5  # range 3-5, ottimizzabile in §5.3
+nmf = NMF(n_components=N_TOPICS, random_state=42, max_iter=300)
+topic_matrix = nmf.fit_transform(tfidf_matrix)
+
+topic_df = pd.DataFrame(
+    topic_matrix,
+    columns=[f"topic_{i}" for i in range(N_TOPICS)],
+    index=listing_docs.index
+)
+```
+
+**Feature**: 5 colonne (`topic_0` ... `topic_4`) 🟢 CORE
+
+Dopo il fitting, stampa le top-15 parole per topic per verificare l'interpretabilità:
+```python
+for i, component in enumerate(nmf.components_):
+    top_words = [tfidf.get_feature_names_out()[j] for j in component.argsort()[-15:]]
+    print(f"Topic {i}: {', '.join(top_words)}")
+```
+
+Con 5 topic, cluster attesi: *location/trasporti*, *pulizia/comfort*, *comunicazione host*, *valore/prezzo*, *esperienza complessiva*.
+
+> Si aggiunge `dominant_topic` (argmax) come **feature categorica** — i modelli ad albero possono fare split su di essa. +1 colonna. 🟢 CORE
+
+#### 4.3.4 Aspect Extraction (lessico di dominio)
+
+Scoring per-review basato su keyword specifiche del dominio, aggregato per listing:
+
+```python
+ASPECTS = {
+    "cleanliness":  ["clean", "dirty", "spotless", "tidy", "dust", "stain",
+                     "hygienic", "smell", "mold", "filthy", "immaculate"],
+    "location":     ["location", "central", "metro", "station", "walk",
+                     "close", "far", "noisy", "quiet", "neighborhood",
+                     "convenient", "transport", "bus", "tram"],
+    "value":        ["value", "price", "expensive", "cheap", "worth",
+                     "overpriced", "bargain", "money", "affordable"],
+    "comfort":      ["comfortable", "cozy", "spacious", "cramped", "bed",
+                     "mattress", "pillow", "sleep", "noise", "thin walls"],
+    "host_quality": ["host", "responsive", "helpful", "kind", "welcoming",
+                     "rude", "communication", "attentive", "friendly",
+                     "flexible", "accommodating"],
+    "accuracy":     ["accurate", "photos", "description", "misleading",
+                     "exactly", "as described", "different", "expectation"],
+}
+
+for aspect, keywords in ASPECTS.items():
+    kw_set = set(keywords)
+    reviews_df[f"asp_{aspect}"] = reviews_df["comments_clean"].apply(
+        lambda text: sum(1 for w in text.split() if w in kw_set)
+    )
+
+# Media (non somma) — la somma correlerebbe con il conteggio recensioni, già presente come feature
+aspect_agg = reviews_df.groupby("listing_id")[
+    [f"asp_{a}" for a in ASPECTS]
+].mean().fillna(0)
+```
+
+**Feature**: 6 colonne (media per aspetto) 🟢 CORE
+
+#### 4.3.5 Analisi Temporale
+
+Come sta cambiando la ricezione del listing nel tempo?
+
+```python
+reviews_df["date"] = pd.to_datetime(reviews_df["date"])
+
+def compute_temporal_features(group):
+    group = group.sort_values("date")
+    n = len(group)
+    if n < 2:
+        return pd.Series({
+            "review_span_days": 0,
+            "avg_days_between_reviews": 0,
+            "sentiment_trend": 0,
+            "days_since_last_review": 9999,
+            "review_acceleration": 0,
+        })
+
+    span = (group["date"].max() - group["date"].min()).days
+    intervals = group["date"].diff().dt.days.dropna()
+
+    # Trend del sentiment: pendenza regressione lineare di vader_compound nel tempo
+    if n >= 3:
+        ordinal_dates = (group["date"] - group["date"].min()).dt.days.values
+        slope = np.polyfit(ordinal_dates, group["vader_compound"].values, 1)[0]
+    else:
+        slope = 0
+
+    # Accelerazione: le recensioni arrivano più velocemente di recente?
+    if len(intervals) >= 4:
+        recent = intervals.iloc[-len(intervals)//2:].mean()
+        old = intervals.iloc[:len(intervals)//2].mean()
+        accel = (old - recent) / (old + 1e-9)  # positivo = in accelerazione
+    else:
+        accel = 0
+
+    last_review_date = group["date"].max()
+    days_since = (pd.Timestamp("2025-09-22") - last_review_date).days
+
+    return pd.Series({
+        "review_span_days": span,
+        "avg_days_between_reviews": intervals.mean(),
+        "sentiment_trend": slope,
+        "days_since_last_review": days_since,
+        "review_acceleration": accel,
+    })
+
+temporal_df = reviews_df.groupby("listing_id").apply(compute_temporal_features)
+```
+
+**Feature**: 5 colonne 🟢 CORE
+
+| Feature | Intuizione | Tier |
+|---------|------------|------|
+| `review_span_days` | Da quanto tempo è attivo il listing | 🟢 Core |
+| `avg_days_between_reviews` | Proxy della frequenza di prenotazione | 🟢 Core |
+| `sentiment_trend` | La qualità sta migliorando o degradando? | 🟢 Core |
+| `days_since_last_review` | Recency — listing stagnanti possono avere pricing diverso | 🟢 Core |
+| `review_acceleration` | Sta guadagnando o perdendo slancio? | 🟢 Core |
+
+#### 4.3.6 Metadati Recensioni
+
+Feature semplici ma sorprendentemente predittive dalla struttura delle recensioni:
+
+```python
+metadata_df = reviews_df.assign(
+    review_length=lambda df: df["comments"].str.len(),
+    review_word_count=lambda df: df["comments"].str.split().str.len(),
+).groupby("listing_id").agg(
+    avg_review_length=("review_length", "mean"),
+    avg_word_count=("review_word_count", "mean"),
+    std_review_length=("review_length", "std"),
+    max_review_length=("review_length", "max"),
+).fillna(0)
+```
+
+**Feature**: 4 colonne 🟢 CORE
+
+**Intuizione**: recensioni più lunghe spesso correlano con esperienze più forti (positive o negative). Recensioni molto brevi ("ok", "nice") indicano basso engagement.
+
+#### 4.3.7 Assemblaggio Feature e Merge
+
+```python
+# ── Feature CORE (sempre incluse) ──
+nlp_features_df = (
+    sentiment_agg                  # 5 colonne   🟢
+    .join(topic_df)                # 5 colonne   🟢  (+ 1 dominant_topic)
+    .join(aspect_agg)              # 6 colonne   🟢
+    .join(temporal_df)             # 5 colonne   🟢
+    .join(metadata_df)             # 4 colonne   🟢
+    .fillna(0)
+)
+# CORE atteso: ~26 colonne
+
+# ── Feature OPZIONALI (aggiungere se l'ablation mostra beneficio) ──
+# nlp_features_df = nlp_features_df.join(reviewer_signal)   # +3 col  🟡
+# nlp_features_df = nlp_features_df.join(popularity)        # +3 col  🟡
+# Per Task B solamente:
+# nlp_features_df = nlp_features_df.join(peer_price_df)     # +1 col  🟡
+
+# Merge con listings
+listings_enriched = listings_df.merge(
+    nlp_features_df, left_on="id", right_index=True, how="left"
+).fillna(0)
+```
+
+#### Feature Budget Summary
+
+| Gruppo | Tecnica | # Feature | Tier |
+|--------|---------|-----------|------|
+| Sentiment | VADER (rule-based NLP) | 5 | 🟢 Core |
+| Topic | NMF topic modeling | 5 (+1 categorica) | 🟢 Core |
+| Aspetti | Lessico di dominio | 6 | 🟢 Core |
+| Temporale | Analisi serie temporali | 5 | 🟢 Core |
+| Metadati recensioni | Statistiche base testo | 4 | 🟢 Core |
+| **Subtotale Core** | | **~26** | |
+| Segnali reviewer | Analisi collaborativa | 3 | 🟡 Optional |
+| Popolarità | Aggregazione | 3 | 🟡 Optional |
+| Co-visitation | Cosine similarity | 1 (solo Task B) | 🟡 Optional |
+| **Subtotale Optional** | | **~7** | |
+| **Totale max** | | **~33** | |
+
+> **Budget feature**: ~26 feature core da recensioni + 15 cluster amenity + ~15 strutturali = **~56 feature** nella configurazione core. L'ablation study in §4.1.7 / §4.2.7 determinerà se le feature opzionali meritano l'inclusione.
+
 
 ---
 
@@ -353,58 +644,59 @@ inner_cv = KFold(n_splits=3)
 
 ---
 
-### 5.3 Task C — NLP Classification
+### 5.3 Task D — NMF Topic Modeling
 
-#### 5.3.1 Ottimizzazione TF-IDF + Classificatore (Pipeline)
+#### 5.3.1 Ottimizzazione NMF (wrapper-based feature selection)
 
-```python
-param_grid = {
-    "tfidf__max_features": [5000, 10000, 20000],
-    "tfidf__ngram_range": [(1, 1), (1, 2)],
-    "clf__C": [0.1, 1, 10],            # per LogReg / SVM
-}
-# GridSearchCV su Pipeline([TfidfVectorizer, LinearSVC])
-```
-
----
-
-### 5.4 Task D — Recommendation (SVD)
-
-#### 5.4.1 GridSearch con `surprise`
+Ottimizzazione degli iperparametri del topic modeling NMF per massimizzare l'R² downstream sui task di regressione:
 
 ```python
-from surprise.model_selection import GridSearchCV as SurpriseGridSearch
+from sklearn.model_selection import ParameterGrid
 
 param_grid = {
-    "n_factors": [50, 100],
-    "lr_all": [0.002, 0.005],
-    "reg_all": [0.02, 0.1],
+    "n_topics": [3, 4, 5],           # range ristretto per stabilità
+    "max_features": [3000, 5000],
+    "ngram_range": [(1, 1), (1, 2)],
 }
-# Metrica ottimizzata: RMSE
+
+# Per ogni combinazione: fit NMF, ricostruisci feature, addestra XGBoost su Task A,
+# misura R² su held-out set. Scegli la config NMF che massimizza l'R² downstream.
+best_r2 = -np.inf
+for params in ParameterGrid(param_grid):
+    tfidf = TfidfVectorizer(max_features=params["max_features"],
+                            stop_words=COMBINED_STOPS,
+                            ngram_range=params["ngram_range"])
+    nmf = NMF(n_components=params["n_topics"], random_state=42)
+    # ... ricostruisci feature, addestra, valuta
+    if r2 > best_r2:
+        best_r2 = r2
+        best_nmf_params = params
 ```
 
-#### 5.4.2 Best SVD vs baseline KNN
-- Tabella comparativa finale.
+> Si tratta di una forma di **wrapper-based feature selection** — ottimizzazione dello stadio di estrazione feature per massimizzare le performance del modello downstream.
 
 ---
 
 ## 6. Conclusioni
 
-### 6.1 Tabella Riassuntiva Finale (tutti i task)
+### 6.1 Tabella Riassuntiva Finale
 
-| Task                  | Modello migliore       | Metrica principale | Valore |
-|-----------------------|------------------------|--------------------|--------|
-| Price Prediction      | XGBoost ottimizzato    | RMSE               | X.XX   |
-| Occupancy Regression  | XGBoost ottimizzato    | R²                 | X.XX   |
-| NLP Classification    | …                      | F1-macro           | X.XX   |
-| Recommendation        | SVD ottimizzato        | RMSE               | X.XX   |
+| Task | Modello migliore | Metrica | Baseline | + Reviews | Δ |
+|------|-----------------|---------|----------|-----------|---|
+| Price Prediction | XGBoost ottimizzato | RMSE | X.XX | X.XX | -X.XX |
+| Price Prediction | XGBoost ottimizzato | R² | X.XX | X.XX | +X.XX |
+| Occupancy Regression | XGBoost ottimizzato | RMSE | X.XX | X.XX | -X.XX |
+| Occupancy Regression | XGBoost ottimizzato | R² | X.XX | X.XX | +X.XX |
 
 ### 6.2 Cross-Task Insights
-- Come il `sentiment_score` da §4.3 ha migliorato la regressione?
-- Feature più importanti in comune tra price e occupancy?
-- Il rating derivato in §4.4 (Opzione A vs B) cambia significativamente l'output del recommender?
+- Quale **gruppo di feature NLP** ha avuto il maggiore impatto marginale? (ablation study)
+- Quali **feature NLP** compaiono nella top-20 feature importances di XGBoost?
+- Il `sentiment_trend` (miglioramento vs degradazione) influenza price e occupancy in modo diverso?
+- I cluster di amenity si comportano come atteso? (es. `has_luxury` → prezzo più alto)
 
 ### 6.3 Limiti e Sviluppi Futuri
 - `calendar.csv` corrotto → impossibile analisi temporale fine dei prezzi.
-- `reviews.csv` senza rating numerico → ratings derivati introducono rumore.
-- Possibili approcci alternativi: deep learning (BERT per NLP), LightGBM, ensemble stacking.
+- VADER su testo multilingue è rumoroso → futuro: transformer multilingue (XLM-R).
+- Topic modeling bag-of-words → futuro: BERTopic per topic contestuali.
+- `peer_avg_price` è una feature potente ma ha problemi di cold-start per listing senza recensioni.
+- Possibile estensione: previsione serie temporali dell'occupancy con `calendar.csv` (se disponibile).
