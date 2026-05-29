@@ -19,6 +19,7 @@ scipy
 # jupyter
 ipykernel
 nbdime
+xgboost
 
 # Optional / useful extras
 # lightgbm
