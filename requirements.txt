@@ -7,7 +7,8 @@ scikit-learn
 wheel
 requests
 nbstripout
-# xgboost
+vaderSentiment
+xgboost
 # imbalanced-learn
 # scikit-surprise
 # langdetect
