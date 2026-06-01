@@ -221,3 +221,8 @@ __marimo__/
 
 # Vscode
 .vscode
+
+# AirML frontend
+web-app/frontend/node_modules/
+web-app/frontend/dist/
+web-app/frontend/.vite/
