@@ -1,0 +1,63 @@
+@import "leaflet/dist/leaflet.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color: #1b1c1c;
+  background: #fbf9f8;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 218, 216, 0.26) 0%, rgba(251, 249, 248, 0) 360px),
+    #fbf9f8;
+  color: #1b1c1c;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.leaflet-container {
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  background: #f0eded;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+.ambient-card {
+  @apply rounded-2xl bg-surface-container-lowest shadow-ambient;
+}
+
+.field-shell {
+  @apply w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-fixed;
+}
+
+.icon-button {
+  @apply inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface-variant shadow-ambient-soft transition hover:border-primary hover:text-primary;
+}
