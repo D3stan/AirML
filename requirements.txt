@@ -21,6 +21,7 @@ scipy
 ipykernel
 nbdime
 xgboost
+geopandas
 
 # Optional / useful extras
 # lightgbm
