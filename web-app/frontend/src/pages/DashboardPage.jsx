@@ -1,10 +1,9 @@
-import { ChevronDown, Percent, TrendingUp } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import Header from "../components/Header.jsx";
+import ModelSelectDropdown from "../components/ModelSelectDropdown.jsx";
 import OccupancyChart from "../components/OccupancyChart.jsx";
 import PricePredictionCard from "../components/PricePredictionCard.jsx";
 import PropertyMapCard from "../components/PropertyMapCard.jsx";
-import { modelOptions } from "../data/mockData.js";
 import { setPredictionModel } from "../features/predictions/predictionsSlice.js";
 import { saveMockPredictions } from "../utils/storage.js";
 
@@ -13,36 +12,6 @@ function SummaryRow({ label, value }) {
     <div className="flex items-center justify-between border-b border-outline-variant/35 py-3 last:border-b-0">
       <span className="text-[12px] font-bold text-on-surface-variant">{label}</span>
       <span className="text-right text-[14px] font-extrabold text-on-surface">{value}</span>
-    </div>
-  );
-}
-
-function ModelDropdown({ value, accuracy, relativeError, onChange, label }) {
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-8 appearance-none rounded-full border-0 bg-[#f1f5f9] py-0 pl-4 pr-28 text-[12px] font-bold text-on-surface outline-none ring-0"
-        aria-label={label}
-      >
-        {modelOptions.map((model) => (
-          <option key={model} value={model}>
-            {model}
-          </option>
-        ))}
-      </select>
-      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-3 text-[11px] font-bold text-on-surface-variant">
-        <span className="inline-flex items-center gap-1">
-          <TrendingUp size={13} />
-          {accuracy}%
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Percent size={13} />
-          {relativeError}%
-        </span>
-        <ChevronDown size={14} />
-      </div>
     </div>
   );
 }
@@ -96,7 +65,7 @@ export default function DashboardPage() {
           <article className="flex min-h-0 flex-[1.48] flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8">
             <div className="mb-4 flex items-start justify-between gap-4">
               <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Occupancy Prediction</h2>
-              <ModelDropdown
+              <ModelSelectDropdown
                 value={predictions.occupancy.model}
                 accuracy={predictions.occupancy.accuracy}
                 relativeError={predictions.occupancy.relativeError}

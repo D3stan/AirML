@@ -42,6 +42,14 @@ button {
   cursor: pointer;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .leaflet-container {
   z-index: 1;
   width: 100%;

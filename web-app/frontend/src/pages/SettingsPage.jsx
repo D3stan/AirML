@@ -48,12 +48,17 @@ function modifiedClasses(changed) {
     : "border-outline-variant bg-surface-container-lowest";
 }
 
+function controlClasses(changed, extraClasses = "") {
+  return `w-full rounded-xl border px-4 text-body-md text-on-surface outline-none transition focus:border-primary focus:ring-2 focus:ring-primary-fixed ${modifiedClasses(
+    changed,
+  )} ${extraClasses}`;
+}
+
 function Field({ label, changed, savedValue, children }) {
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-3">
       <div className="flex min-h-5 items-center justify-between gap-3">
         <label className="text-label-md text-on-surface-variant">{label}</label>
-        {changed && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-on-primary">Modified</span>}
       </div>
       {children}
       {changed && <span className="text-[11px] font-semibold text-primary">Saved: {String(savedValue)}</span>}
@@ -82,7 +87,7 @@ function SelectMenu({ label, value, options, onChange, changed, savedValue }) {
         <button
           type="button"
           onClick={() => setOpen((current) => !current)}
-          className={`flex min-h-[52px] w-full items-center justify-between rounded-xl border px-4 text-left text-body-md font-bold text-on-surface transition ${modifiedClasses(
+          className={`flex min-h-[56px] w-full items-center justify-between rounded-xl border px-4 text-left text-body-md font-bold text-on-surface transition ${modifiedClasses(
             changed,
           )}`}
         >
@@ -90,7 +95,7 @@ function SelectMenu({ label, value, options, onChange, changed, savedValue }) {
           <ChevronDown size={20} className={`text-on-surface transition ${open ? "rotate-180" : ""}`} />
         </button>
         {open && (
-          <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[900] overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 shadow-ambient">
+          <div className="no-scrollbar absolute left-0 right-0 top-[calc(100%+10px)] z-[900] max-h-[236px] overflow-y-auto rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 shadow-ambient">
             {options.map((option) => (
               <button
                 key={option}
@@ -173,7 +178,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header mode="settings" />
-      <main className="mx-auto w-full max-w-[920px] px-5 py-8 md:px-8">
+      <main className="mx-auto w-full max-w-[920px] px-5 pb-32 pt-8 md:px-8">
         <header className="mb-8">
           <h1 className="font-display text-headline-lg text-on-background">Property Settings</h1>
           <p className="mt-2 max-w-2xl text-body-md text-on-surface-variant">
@@ -202,7 +207,7 @@ export default function SettingsPage() {
               />
               <Field label="Latitude" changed={isChanged("latitude")} savedValue={savedProperty.latitude}>
                 <input
-                  className={`field-shell border ${modifiedClasses(isChanged("latitude"))}`}
+                  className={controlClasses(isChanged("latitude"), "min-h-[56px]")}
                   type="number"
                   step="0.000001"
                   value={property.latitude}
@@ -211,7 +216,7 @@ export default function SettingsPage() {
               </Field>
               <Field label="Longitude" changed={isChanged("longitude")} savedValue={savedProperty.longitude}>
                 <input
-                  className={`field-shell border ${modifiedClasses(isChanged("longitude"))}`}
+                  className={controlClasses(isChanged("longitude"), "min-h-[56px]")}
                   type="number"
                   step="0.000001"
                   value={property.longitude}
@@ -249,12 +254,13 @@ export default function SettingsPage() {
                 onChange={(value) => setField("room_type", value)}
               />
             </div>
-            <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-6 grid grid-cols-4 gap-4">
               <CounterInput
                 label="Accommodates"
                 min={1}
                 value={property.accommodates}
                 changed={isChanged("accommodates")}
+                savedValue={savedProperty.accommodates}
                 onChange={(value) => setField("accommodates", value)}
               />
               <CounterInput
@@ -262,6 +268,7 @@ export default function SettingsPage() {
                 min={1}
                 value={property.bathrooms}
                 changed={isChanged("bathrooms")}
+                savedValue={savedProperty.bathrooms}
                 onChange={(value) => setField("bathrooms", value)}
               />
               <CounterInput
@@ -269,6 +276,7 @@ export default function SettingsPage() {
                 min={0}
                 value={property.bedrooms}
                 changed={isChanged("bedrooms")}
+                savedValue={savedProperty.bedrooms}
                 onChange={(value) => setField("bedrooms", value)}
               />
               <CounterInput
@@ -276,6 +284,7 @@ export default function SettingsPage() {
                 min={1}
                 value={property.beds}
                 changed={isChanged("beds")}
+                savedValue={savedProperty.beds}
                 onChange={(value) => setField("beds", value)}
               />
             </div>
@@ -287,9 +296,6 @@ export default function SettingsPage() {
             >
               <div className="mb-3 flex min-h-5 items-center justify-between gap-3">
                 <span className="text-label-md text-on-surface-variant">Selectable amenities</span>
-                {isChanged("amenities") && (
-                  <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-on-primary">Modified</span>
-                )}
               </div>
               <div className="flex flex-wrap gap-3">
                 {amenityOptions.map((amenity) => (
@@ -309,42 +315,38 @@ export default function SettingsPage() {
 
           <SettingsSection icon={CalendarClock} title="Booking Rules">
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="grid gap-5">
-                <Field label="Minimum nights" changed={isChanged("minimum_nights")} savedValue={savedProperty.minimum_nights}>
-                  <input
-                    className={`field-shell border ${modifiedClasses(isChanged("minimum_nights"))}`}
-                    type="number"
-                    min="1"
-                    value={property.minimum_nights}
-                    onChange={(event) => setField("minimum_nights", Math.max(1, numberValue(event.target.value)))}
-                  />
-                </Field>
-                <Field label="Maximum nights" changed={isChanged("maximum_nights")} savedValue={savedProperty.maximum_nights}>
-                  <input
-                    className={`field-shell border ${modifiedClasses(isChanged("maximum_nights"))}`}
-                    type="number"
-                    min="1"
-                    value={property.maximum_nights}
-                    onChange={(event) => setField("maximum_nights", Math.max(1, numberValue(event.target.value)))}
-                  />
-                </Field>
-              </div>
-              <div className="grid content-center gap-4">
-                <ToggleInput
-                  label="Instant bookable"
-                  description="Allow immediate reservation approval"
-                  checked={property.instant_bookable}
-                  changed={isChanged("instant_bookable")}
-                  onChange={(value) => setField("instant_bookable", value)}
+              <Field label="Minimum nights" changed={isChanged("minimum_nights")} savedValue={savedProperty.minimum_nights}>
+                <input
+                  className={controlClasses(isChanged("minimum_nights"), "min-h-[56px]")}
+                  type="number"
+                  min="1"
+                  value={property.minimum_nights}
+                  onChange={(event) => setField("minimum_nights", Math.max(1, numberValue(event.target.value)))}
                 />
-                <ToggleInput
-                  label="Has availability"
-                  description="Listing can receive bookings"
-                  checked={property.has_availability}
-                  changed={isChanged("has_availability")}
-                  onChange={(value) => setField("has_availability", value)}
+              </Field>
+              <ToggleInput
+                label="Instant bookable"
+                description="Allow immediate reservation approval"
+                checked={property.instant_bookable}
+                changed={isChanged("instant_bookable")}
+                onChange={(value) => setField("instant_bookable", value)}
+              />
+              <Field label="Maximum nights" changed={isChanged("maximum_nights")} savedValue={savedProperty.maximum_nights}>
+                <input
+                  className={controlClasses(isChanged("maximum_nights"), "min-h-[56px]")}
+                  type="number"
+                  min="1"
+                  value={property.maximum_nights}
+                  onChange={(event) => setField("maximum_nights", Math.max(1, numberValue(event.target.value)))}
                 />
-              </div>
+              </Field>
+              <ToggleInput
+                label="Has availability"
+                description="Listing can receive bookings"
+                checked={property.has_availability}
+                changed={isChanged("has_availability")}
+                onChange={(value) => setField("has_availability", value)}
+              />
             </div>
           </SettingsSection>
 

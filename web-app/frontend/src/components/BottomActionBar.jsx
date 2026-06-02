@@ -2,7 +2,7 @@ import { Play, RotateCcw, Save } from "lucide-react";
 
 export default function BottomActionBar({ onReset, onSave, onRunSimulation }) {
   return (
-    <div className="rounded-2xl bg-surface-container-lowest p-5 shadow-ambient">
+    <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-[920px] -translate-x-1/2 rounded-2xl border border-outline-variant/45 bg-surface-container-lowest/95 p-4 shadow-ambient backdrop-blur">
       <div className="flex w-full flex-col justify-center gap-3 sm:flex-row">
         <button
           type="button"
