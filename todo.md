@@ -1,0 +1,19 @@
+# TODO NICO
+- [x] Prova CatBoost
+- [ ] Descrivere nuovo preprocessing
+- [ ] Mettere a posto preprocessing
+- [ ] Descrivere modelli:
+    - [ ] Lasso
+    - [ ] Ridge
+    - [ ] Ridge polinomiale
+    - [ ] Tree-based
+    - [ ] Random Forest
+    - [ ] CatBoost
+    - [ ] XGBoost
+- [ ] Analisi esplorativa
+    - [ ] Creazione nuove variabili combinate
+    - [ ] Geocluster
+    - [ ]
+- [ ] Confronto modelli
+    - [ ] Confronto metriche
+    - [ ] Confronto feature importance
