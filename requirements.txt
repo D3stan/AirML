@@ -22,8 +22,11 @@ ipykernel
 nbdime
 xgboost
 geopandas
+shap
+optuna
 
 # Optional / useful extras
-# lightgbm
+lightgbm
+catboost
 # gensim
 # sentence-transformers
