@@ -1,11 +1,20 @@
 import { Minus, Plus } from "lucide-react";
 
-export default function CounterInput({ label, value, min = 0, max = 50, onChange }) {
+export default function CounterInput({ label, value, min = 0, max = 50, onChange, changed = false }) {
   const safeValue = Number(value) || 0;
 
   return (
-    <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-center">
-      <label className="text-label-md text-on-surface-variant">{label}</label>
+    <div
+      className={`rounded-xl border p-4 text-center transition ${
+        changed
+          ? "border-primary bg-primary-fixed/45 shadow-[0_0_0_2px_rgba(181,35,48,0.08)]"
+          : "border-outline-variant bg-surface-container-lowest"
+      }`}
+    >
+      <div className="flex min-h-5 items-center justify-center gap-2">
+        <label className="text-label-md text-on-surface-variant">{label}</label>
+        {changed && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-on-primary">Modified</span>}
+      </div>
       <div className="mt-3 flex items-center justify-center gap-3">
         <button
           type="button"

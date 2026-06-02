@@ -1,26 +1,52 @@
 import { monthLabels } from "../data/mockData.js";
 
-export default function OccupancyChart({ monthly }) {
-  const maxValue = Math.max(31, ...Object.values(monthly));
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+export default function OccupancyChart({ monthly, relativeError }) {
+  const chartRows = monthLabels.map((month) => {
+    const prediction = monthly[month] ?? 0;
+    const errorDays = Math.max(1, Math.round(relativeError));
+    return {
+      month,
+      lower: clamp(prediction - errorDays, 0, 31),
+      prediction,
+      upper: clamp(prediction + errorDays, 0, 31),
+    };
+  });
 
   return (
-    <div className="h-full min-h-[320px] overflow-x-auto">
-      <div className="flex h-full min-w-[720px] items-end gap-4 px-1 pb-1 pt-8">
-        {monthLabels.map((month) => {
-          const value = monthly[month] ?? 0;
-          const height = `${Math.max(8, (value / maxValue) * 100)}%`;
+    <div className="flex h-full min-h-0 items-end">
+      <div className="flex h-full w-full items-end justify-center gap-3 xl:gap-5">
+        {chartRows.map(({ month, lower, prediction, upper }) => {
+          const upperHeight = `${Math.max(8, (upper / 31) * 100)}%`;
+          const predictionHeight = `${Math.max(8, (prediction / 31) * 100)}%`;
+          const lowerHeight = `${Math.max(8, (lower / 31) * 100)}%`;
 
           return (
-            <div key={month} className="flex h-full flex-1 flex-col items-center justify-end gap-3">
-              <div className="flex h-[260px] w-full items-end rounded-lg bg-surface-container px-1.5 pb-1.5">
+            <div key={month} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+              <div className="relative h-[min(32vh,300px)] w-full max-w-[34px]">
                 <div
-                  className="flex w-full items-start justify-center rounded-md bg-primary pt-2 text-[11px] font-bold text-on-primary shadow-ambient-soft transition"
-                  style={{ height }}
+                  className="absolute bottom-0 left-0 flex w-full items-start justify-center rounded-lg bg-[#ffd5d3] pt-2 text-[10px] font-bold text-primary"
+                  style={{ height: upperHeight }}
                 >
-                  {value}
+                  {upper}
+                </div>
+                <div
+                  className="absolute bottom-0 left-0 flex w-full items-start justify-center rounded-lg bg-primary-container pt-2 text-[10px] font-bold text-on-primary-container"
+                  style={{ height: predictionHeight }}
+                >
+                  {prediction}
+                </div>
+                <div
+                  className="absolute bottom-0 left-0 flex w-full items-start justify-center rounded-lg bg-primary pt-2 text-[10px] font-bold text-on-primary"
+                  style={{ height: lowerHeight }}
+                >
+                  {lower}
                 </div>
               </div>
-              <span className="text-label-sm text-on-surface-variant">{month}</span>
+              <span className="text-[12px] font-semibold text-on-surface">{month}</span>
             </div>
           );
         })}

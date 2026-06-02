@@ -1,29 +1,52 @@
-import { useEffect } from "react";
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
+import L from "leaflet";
+import { useEffect, useMemo } from "react";
+import { MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 
-function MapSynchronizer({ center }) {
+function MapSynchronizer({ center, zoom }) {
   const map = useMap();
 
   useEffect(() => {
-    map.setView(center, map.getZoom(), { animate: true });
-  }, [center, map]);
+    map.setView(center, zoom ?? map.getZoom(), { animate: true });
+  }, [center, map, zoom]);
 
   return null;
 }
 
-export default function PropertyMapCard({ property, draggable = false, onLocationChange }) {
-  const center = [Number(property.latitude), Number(property.longitude)];
+export default function PropertyMapCard({
+  property,
+  draggable = false,
+  onLocationChange,
+  mapCenter,
+  zoom,
+  showTooltip = true,
+  className = "",
+}) {
+  const markerPosition = [Number(property.latitude), Number(property.longitude)];
+  const center = mapCenter ?? markerPosition;
+  const initialZoom = zoom ?? 13;
+  const markerIcon = useMemo(
+    () =>
+      L.divIcon({
+        className: "airml-marker-shell",
+        html: '<span class="airml-marker-dot"></span>',
+        iconAnchor: [9, 9],
+        iconSize: [18, 18],
+        popupAnchor: [0, -10],
+      }),
+    [],
+  );
 
   return (
-    <div className="relative h-full min-h-[360px] overflow-hidden rounded-xl bg-surface-container">
-      <MapContainer center={center} zoom={13} scrollWheelZoom className="h-full min-h-[360px]">
-        <MapSynchronizer center={center} />
+    <div className={`relative h-full min-h-[360px] overflow-hidden rounded-xl bg-surface-container ${className}`}>
+      <MapContainer center={center} zoom={initialZoom} scrollWheelZoom className="airml-dashboard-map h-full min-h-[360px]">
+        <MapSynchronizer center={center} zoom={initialZoom} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <Marker
-          position={center}
+          position={markerPosition}
+          icon={markerIcon}
           draggable={draggable}
           eventHandlers={
             draggable
@@ -45,12 +68,13 @@ export default function PropertyMapCard({ property, draggable = false, onLocatio
             <br />
             {property.neighbourhood_cleansed}
           </Popup>
+          {showTooltip && (
+            <Tooltip permanent direction="bottom" offset={[0, 18]} className="airml-map-tooltip">
+              {property.city}
+            </Tooltip>
+          )}
         </Marker>
       </MapContainer>
-
-      <div className="pointer-events-none absolute left-4 top-4 z-[500] rounded-lg bg-inverse-surface px-3 py-2 text-label-sm text-inverse-on-surface shadow-ambient-soft">
-        {property.city}, {property.neighbourhood_cleansed}
-      </div>
     </div>
   );
 }

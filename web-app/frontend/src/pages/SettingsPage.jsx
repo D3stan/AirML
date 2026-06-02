@@ -1,5 +1,5 @@
-import { Building2, CalendarClock, CheckCircle2, MapPin } from "lucide-react";
-import { useMemo } from "react";
+import { Building2, CalendarClock, CheckCircle2, ChevronDown, MapPin } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import AmenityPill from "../components/AmenityPill.jsx";
@@ -12,9 +12,9 @@ import ToggleInput from "../components/ToggleInput.jsx";
 import {
   amenityOptions,
   cityOptions,
+  cityProfiles,
   defaultPredictions,
   defaultPropertySettings,
-  neighbourhoodOptions,
   propertyTypeOptions,
   roomTypeOptions,
 } from "../data/mockData.js";
@@ -26,64 +26,129 @@ import {
   updatePropertyFields,
 } from "../features/property/propertySlice.js";
 import { generateMockPredictions } from "../services/mockPredictionService.js";
-import { saveMockPredictions, savePropertySettings } from "../utils/storage.js";
+import {
+  clearPropertyDraft,
+  loadSavedPropertySettings,
+  saveMockPredictions,
+  savePropertyDraft,
+  savePropertySettings,
+} from "../utils/storage.js";
 
-function Field({ label, children }) {
-  return (
-    <label className="grid gap-2 text-label-md text-on-surface-variant">
-      {label}
-      {children}
-    </label>
-  );
+function valuesEqual(a, b) {
+  return JSON.stringify(a) === JSON.stringify(b);
 }
 
 function numberValue(value) {
   return Number.isNaN(Number(value)) ? 0 : Number(value);
 }
 
-function calculateCompleteness(property) {
-  const fields = [
-    property.city,
-    property.neighbourhood_cleansed,
-    property.latitude,
-    property.longitude,
-    property.property_type,
-    property.room_type,
-    property.accommodates,
-    property.bathrooms,
-    property.bedrooms,
-    property.beds,
-    property.amenities?.length,
-    property.minimum_nights,
-    property.maximum_nights,
-    property.instant_bookable !== null,
-    property.has_availability !== null,
-    property.availability_365,
-  ];
+function modifiedClasses(changed) {
+  return changed
+    ? "border-primary bg-primary-fixed/45 shadow-[0_0_0_2px_rgba(181,35,48,0.08)]"
+    : "border-outline-variant bg-surface-container-lowest";
+}
 
-  const filled = fields.filter((value) => {
-    if (Array.isArray(value)) {
-      return value.length > 0;
-    }
+function Field({ label, changed, savedValue, children }) {
+  return (
+    <div className="grid gap-2">
+      <div className="flex min-h-5 items-center justify-between gap-3">
+        <label className="text-label-md text-on-surface-variant">{label}</label>
+        {changed && <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-on-primary">Modified</span>}
+      </div>
+      {children}
+      {changed && <span className="text-[11px] font-semibold text-primary">Saved: {String(savedValue)}</span>}
+    </div>
+  );
+}
 
-    return value !== undefined && value !== null && value !== "";
-  }).length;
+function SelectMenu({ label, value, options, onChange, changed, savedValue }) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
 
-  return Math.round((filled / fields.length) * 100);
+  useEffect(() => {
+    const closeMenu = (event) => {
+      if (!wrapperRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeMenu);
+    return () => document.removeEventListener("mousedown", closeMenu);
+  }, []);
+
+  return (
+    <Field label={label} changed={changed} savedValue={savedValue}>
+      <div ref={wrapperRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className={`flex min-h-[52px] w-full items-center justify-between rounded-xl border px-4 text-left text-body-md font-bold text-on-surface transition ${modifiedClasses(
+            changed,
+          )}`}
+        >
+          <span>{value}</span>
+          <ChevronDown size={20} className={`text-on-surface transition ${open ? "rotate-180" : ""}`} />
+        </button>
+        {open && (
+          <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-[900] overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 shadow-ambient">
+            {options.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  onChange(option);
+                  setOpen(false);
+                }}
+                className={`flex min-h-11 w-full items-center rounded-xl px-4 text-left text-body-md font-semibold transition ${
+                  option === value ? "bg-surface-container text-on-surface" : "text-on-surface hover:bg-primary-fixed"
+                }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </Field>
+  );
 }
 
 export default function SettingsPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const property = useSelector((state) => state.property);
-  const completeness = useMemo(() => calculateCompleteness(property), [property]);
+  const [savedProperty, setSavedProperty] = useState(() => loadSavedPropertySettings(defaultPropertySettings));
+
+  const availableNeighbourhoods = useMemo(() => {
+    return cityProfiles[property.city]?.neighbourhoods ?? cityProfiles.Florence.neighbourhoods;
+  }, [property.city]);
+
+  useEffect(() => {
+    savePropertyDraft(property);
+  }, [property]);
+
+  const isChanged = (field) => !valuesEqual(property[field], savedProperty[field]);
 
   const setField = (field, value) => {
     dispatch(updatePropertyField({ field, value }));
   };
 
+  const setCity = (city) => {
+    const cityProfile = cityProfiles[city];
+    dispatch(
+      updatePropertyFields({
+        city,
+        neighbourhood_cleansed: cityProfile.neighbourhoods[0],
+        latitude: cityProfile.latitude,
+        longitude: cityProfile.longitude,
+      }),
+    );
+  };
+
   const saveCurrentSettings = () => {
     savePropertySettings(property);
+    clearPropertyDraft();
+    setSavedProperty(property);
   };
 
   const handleReset = () => {
@@ -91,6 +156,8 @@ export default function SettingsPage() {
     dispatch(resetPredictions());
     savePropertySettings(defaultPropertySettings);
     saveMockPredictions(defaultPredictions);
+    clearPropertyDraft();
+    setSavedProperty(defaultPropertySettings);
   };
 
   const handleRunSimulation = () => {
@@ -98,11 +165,13 @@ export default function SettingsPage() {
     dispatch(setPredictions(predictions));
     savePropertySettings(property);
     saveMockPredictions(predictions);
+    clearPropertyDraft();
+    setSavedProperty(property);
     navigate("/dashboard");
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background">
       <Header mode="settings" />
       <main className="mx-auto w-full max-w-[920px] px-5 py-8 md:px-8">
         <header className="mb-8">
@@ -110,54 +179,39 @@ export default function SettingsPage() {
           <p className="mt-2 max-w-2xl text-body-md text-on-surface-variant">
             Enter the property information used by the price and occupancy prediction models.
           </p>
-          <div className="mt-6 rounded-2xl bg-surface-container-lowest p-6 shadow-ambient">
-            <div className="mb-3 flex items-end justify-between gap-5">
-              <span className="text-label-md text-on-surface-variant">Input completeness</span>
-              <span className="font-display text-headline-md text-primary">{completeness}%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-container-high">
-              <div className="h-full rounded-full bg-primary-container transition-all" style={{ width: `${completeness}%` }} />
-            </div>
-          </div>
         </header>
 
         <div className="grid gap-6">
           <SettingsSection icon={MapPin} title="Location">
             <div className="grid gap-6 md:grid-cols-2">
-              <Field label="City">
-                <select className="field-shell" value={property.city} onChange={(event) => setField("city", event.target.value)}>
-                  {cityOptions.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Neighbourhood">
-                <select
-                  className="field-shell"
-                  value={property.neighbourhood_cleansed}
-                  onChange={(event) => setField("neighbourhood_cleansed", event.target.value)}
-                >
-                  {neighbourhoodOptions.map((neighbourhood) => (
-                    <option key={neighbourhood} value={neighbourhood}>
-                      {neighbourhood}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Latitude">
+              <SelectMenu
+                label="City"
+                value={property.city}
+                options={cityOptions}
+                changed={isChanged("city")}
+                savedValue={savedProperty.city}
+                onChange={setCity}
+              />
+              <SelectMenu
+                label="Neighbourhood"
+                value={property.neighbourhood_cleansed}
+                options={availableNeighbourhoods}
+                changed={isChanged("neighbourhood_cleansed")}
+                savedValue={savedProperty.neighbourhood_cleansed}
+                onChange={(value) => setField("neighbourhood_cleansed", value)}
+              />
+              <Field label="Latitude" changed={isChanged("latitude")} savedValue={savedProperty.latitude}>
                 <input
-                  className="field-shell"
+                  className={`field-shell border ${modifiedClasses(isChanged("latitude"))}`}
                   type="number"
                   step="0.000001"
                   value={property.latitude}
                   onChange={(event) => setField("latitude", numberValue(event.target.value))}
                 />
               </Field>
-              <Field label="Longitude">
+              <Field label="Longitude" changed={isChanged("longitude")} savedValue={savedProperty.longitude}>
                 <input
-                  className="field-shell"
+                  className={`field-shell border ${modifiedClasses(isChanged("longitude"))}`}
                   type="number"
                   step="0.000001"
                   value={property.longitude}
@@ -169,6 +223,8 @@ export default function SettingsPage() {
               <PropertyMapCard
                 property={property}
                 draggable
+                zoom={13}
+                showTooltip
                 onLocationChange={(location) => dispatch(updatePropertyFields(location))}
               />
             </div>
@@ -176,79 +232,100 @@ export default function SettingsPage() {
 
           <SettingsSection icon={Building2} title="Property Details">
             <div className="grid gap-6 md:grid-cols-2">
-              <Field label="Property type">
-                <select
-                  className="field-shell"
-                  value={property.property_type}
-                  onChange={(event) => setField("property_type", event.target.value)}
-                >
-                  {propertyTypeOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Field label="Room type">
-                <select className="field-shell" value={property.room_type} onChange={(event) => setField("room_type", event.target.value)}>
-                  {roomTypeOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              <SelectMenu
+                label="Property type"
+                value={property.property_type}
+                options={propertyTypeOptions}
+                changed={isChanged("property_type")}
+                savedValue={savedProperty.property_type}
+                onChange={(value) => setField("property_type", value)}
+              />
+              <SelectMenu
+                label="Room type"
+                value={property.room_type}
+                options={roomTypeOptions}
+                changed={isChanged("room_type")}
+                savedValue={savedProperty.room_type}
+                onChange={(value) => setField("room_type", value)}
+              />
             </div>
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <CounterInput label="Accommodates" min={1} value={property.accommodates} onChange={(value) => setField("accommodates", value)} />
-              <CounterInput label="Bathrooms" min={1} value={property.bathrooms} onChange={(value) => setField("bathrooms", value)} />
-              <CounterInput label="Bedrooms" min={0} value={property.bedrooms} onChange={(value) => setField("bedrooms", value)} />
-              <CounterInput label="Beds" min={1} value={property.beds} onChange={(value) => setField("beds", value)} />
+              <CounterInput
+                label="Accommodates"
+                min={1}
+                value={property.accommodates}
+                changed={isChanged("accommodates")}
+                onChange={(value) => setField("accommodates", value)}
+              />
+              <CounterInput
+                label="Bathrooms"
+                min={1}
+                value={property.bathrooms}
+                changed={isChanged("bathrooms")}
+                onChange={(value) => setField("bathrooms", value)}
+              />
+              <CounterInput
+                label="Bedrooms"
+                min={0}
+                value={property.bedrooms}
+                changed={isChanged("bedrooms")}
+                onChange={(value) => setField("bedrooms", value)}
+              />
+              <CounterInput
+                label="Beds"
+                min={1}
+                value={property.beds}
+                changed={isChanged("beds")}
+                onChange={(value) => setField("beds", value)}
+              />
             </div>
           </SettingsSection>
 
           <SettingsSection icon={CheckCircle2} title="Amenities">
-            <div className="flex flex-wrap gap-3">
-              {amenityOptions.map((amenity) => (
-                <AmenityPill
-                  key={amenity}
-                  label={amenity}
-                  selected={property.amenities.includes(amenity)}
-                  onToggle={() => dispatch(toggleAmenity(amenity))}
-                />
-              ))}
+            <div
+              className={`rounded-2xl border p-4 transition ${modifiedClasses(isChanged("amenities"))}`}
+            >
+              <div className="mb-3 flex min-h-5 items-center justify-between gap-3">
+                <span className="text-label-md text-on-surface-variant">Selectable amenities</span>
+                {isChanged("amenities") && (
+                  <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase text-on-primary">Modified</span>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {amenityOptions.map((amenity) => (
+                  <AmenityPill
+                    key={amenity}
+                    label={amenity}
+                    selected={property.amenities.includes(amenity)}
+                    onToggle={() => dispatch(toggleAmenity(amenity))}
+                  />
+                ))}
+              </div>
+              {isChanged("amenities") && (
+                <p className="mt-3 text-[11px] font-semibold text-primary">Saved: {savedProperty.amenities.join(", ")}</p>
+              )}
             </div>
           </SettingsSection>
 
           <SettingsSection icon={CalendarClock} title="Booking Rules">
             <div className="grid gap-6 md:grid-cols-2">
               <div className="grid gap-5">
-                <Field label="Minimum nights">
+                <Field label="Minimum nights" changed={isChanged("minimum_nights")} savedValue={savedProperty.minimum_nights}>
                   <input
-                    className="field-shell"
+                    className={`field-shell border ${modifiedClasses(isChanged("minimum_nights"))}`}
                     type="number"
                     min="1"
                     value={property.minimum_nights}
                     onChange={(event) => setField("minimum_nights", Math.max(1, numberValue(event.target.value)))}
                   />
                 </Field>
-                <Field label="Maximum nights">
+                <Field label="Maximum nights" changed={isChanged("maximum_nights")} savedValue={savedProperty.maximum_nights}>
                   <input
-                    className="field-shell"
+                    className={`field-shell border ${modifiedClasses(isChanged("maximum_nights"))}`}
                     type="number"
                     min="1"
                     value={property.maximum_nights}
                     onChange={(event) => setField("maximum_nights", Math.max(1, numberValue(event.target.value)))}
-                  />
-                </Field>
-                <Field label="Availability 365">
-                  <input
-                    className="field-shell"
-                    type="number"
-                    min="0"
-                    max="365"
-                    value={property.availability_365}
-                    onChange={(event) => setField("availability_365", Math.min(365, Math.max(0, numberValue(event.target.value))))}
                   />
                 </Field>
               </div>
@@ -257,20 +334,23 @@ export default function SettingsPage() {
                   label="Instant bookable"
                   description="Allow immediate reservation approval"
                   checked={property.instant_bookable}
+                  changed={isChanged("instant_bookable")}
                   onChange={(value) => setField("instant_bookable", value)}
                 />
                 <ToggleInput
                   label="Has availability"
                   description="Listing can receive bookings"
                   checked={property.has_availability}
+                  changed={isChanged("has_availability")}
                   onChange={(value) => setField("has_availability", value)}
                 />
               </div>
             </div>
           </SettingsSection>
+
+          <BottomActionBar onReset={handleReset} onSave={saveCurrentSettings} onRunSimulation={handleRunSimulation} />
         </div>
       </main>
-      <BottomActionBar onReset={handleReset} onSave={saveCurrentSettings} onRunSimulation={handleRunSimulation} />
     </div>
   );
 }

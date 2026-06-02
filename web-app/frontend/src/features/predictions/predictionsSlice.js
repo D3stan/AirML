@@ -11,11 +11,17 @@ const predictionsSlice = createSlice({
     setPredictions(_state, action) {
       return action.payload;
     },
+    setPredictionModel(state, action) {
+      const { target, model } = action.payload;
+      if (state[target]) {
+        state[target].model = model;
+      }
+    },
     resetPredictions() {
       return defaultPredictions;
     },
   },
 });
 
-export const { setPredictions, resetPredictions } = predictionsSlice.actions;
+export const { setPredictions, setPredictionModel, resetPredictions } = predictionsSlice.actions;
 export default predictionsSlice.reducer;
