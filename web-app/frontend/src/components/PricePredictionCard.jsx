@@ -7,7 +7,7 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
   const strokeDasharray = `${progress * circumference} ${circumference}`;
 
   return (
-    <article className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-7 lg:p-8">
+    <article className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-surface-container-lowest px-6 pb-10 pt-6 shadow-ambient sm:p-6 md:p-7 lg:p-8">
       <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row">
         <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Price Prediction</h2>
         <ModelSelectDropdown
@@ -19,13 +19,13 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
         />
       </div>
 
-      <div className="grid flex-1 grid-cols-[minmax(0,1fr)_118px] items-center gap-4 sm:grid-cols-[minmax(0,1fr)_138px] sm:gap-6 lg:grid-cols-[minmax(0,1fr)_150px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_160px]">
+      <div className="grid flex-1 grid-cols-1 items-center gap-6 sm:grid-cols-[minmax(0,1fr)_132px] sm:gap-6 lg:grid-cols-[minmax(0,1fr)_144px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_152px]">
         <div className="min-w-0">
           <div className="grid gap-4 lg:hidden">
             <div className="text-center">
               <span className="block text-[11px] font-extrabold uppercase text-primary">Predicted Rate</span>
               <div className="mt-1 flex items-end justify-center gap-1 text-primary">
-                <span className="font-display text-[40px] font-extrabold leading-none sm:text-[44px]">{prediction.prediction}</span>
+                <span className="font-display text-[38px] font-extrabold leading-none sm:text-[44px]">{prediction.prediction}</span>
                 <Euro size={28} strokeWidth={3} className="mb-1 sm:size-[31px]" />
                 <span className="mb-1 text-[13px] font-semibold text-on-surface sm:text-[14px]">/night</span>
               </div>
@@ -64,9 +64,8 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
           </div>
         </div>
 
-        {/* <div className="flex justify-end pr-1 sm:pr-3 lg:pr-5 xl:pr-7"> */}
-        <div className="flex justify-center">
-          <div className="relative h-28 w-28 shrink-0 sm:h-32 sm:w-32 lg:h-36 lg:w-36 xl:h-36 xl:w-36">
+        <div className="flex justify-center pb-2 sm:pb-0">
+          <div className="relative h-32 w-32 shrink-0 sm:h-32 sm:w-32 lg:h-36 lg:w-36 xl:h-36 xl:w-36">
             <svg className="-rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="44" fill="none" stroke="#e8e4e4" strokeWidth="12" />
               <circle

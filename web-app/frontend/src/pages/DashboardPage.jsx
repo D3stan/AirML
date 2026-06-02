@@ -34,10 +34,10 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="dashboard-page min-h-screen overflow-y-auto lg:h-screen lg:overflow-hidden">
+    <div className="dashboard-page min-h-screen overflow-x-hidden overflow-y-auto lg:h-screen lg:overflow-hidden">
       <Header />
-      <main className="mx-auto grid w-full max-w-[1440px] gap-6 px-4 pb-4 pt-4 md:px-8 lg:h-[calc(100vh-72px)] lg:grid-cols-12 lg:pb-8">
-        <section className="flex min-h-[720px] flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8 lg:col-span-5 lg:min-h-0">
+      <main className="mx-auto grid w-full max-w-[1440px] min-w-0 gap-6 px-4 pb-6 pt-4 md:px-8 lg:h-[calc(100vh-72px)] lg:grid-cols-12 lg:pb-8">
+        <section className="flex min-h-[640px] min-w-0 flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:min-h-[720px] md:p-8 lg:col-span-5 lg:min-h-0">
           <h1 className="mb-5 font-display text-[24px] font-bold leading-8 text-on-surface">Property Profile</h1>
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-surface-container bg-white">
             <PropertyMapCard
@@ -46,7 +46,7 @@ export default function DashboardPage() {
               zoom={5}
               className="h-full min-h-0 rounded-xl"
             />
-            <div className="absolute inset-x-6 bottom-6 z-[500] rounded-xl bg-surface-container-lowest/95 px-6 py-4 shadow-ambient-soft backdrop-blur">
+            <div className="absolute inset-x-4 bottom-4 z-[500] rounded-xl bg-surface-container-lowest/95 px-5 py-4 shadow-ambient-soft backdrop-blur sm:inset-x-6 sm:bottom-6 sm:px-6">
               <SummaryRow label="City" value={property.city} />
               <SummaryRow label="Neighbourhood" value={property.neighbourhood_cleansed} />
               <SummaryRow label="Property type" value={property.property_type} />
@@ -56,14 +56,14 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="flex min-h-[720px] flex-col gap-6 lg:col-span-7 lg:min-h-0">
+        <section className="flex min-h-0 min-w-0 flex-col gap-6 lg:col-span-7">
           <PricePredictionCard
             prediction={predictions.price}
             occupancy={predictions.occupancy}
             onModelChange={(model) => updateModel("price", model)}
           />
-          <article className="flex min-h-0 flex-[1.48] flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8">
-            <div className="mb-4 flex items-start justify-between gap-4">
+          <article className="flex min-h-[560px] min-w-0 flex-[1.48] flex-col overflow-hidden rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8 lg:min-h-0">
+            <div className="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row">
               <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Occupancy Prediction</h2>
               <ModelSelectDropdown
                 value={predictions.occupancy.model}

@@ -178,7 +178,7 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background">
       <Header mode="settings" />
-      <main className="mx-auto w-full max-w-[920px] px-5 pb-32 pt-8 md:px-8">
+      <main className="mx-auto w-full max-w-[920px] px-5 pb-72 pt-8 sm:pb-44 md:px-8">
         <header className="mb-8">
           <h1 className="font-display text-headline-lg text-on-background">Property Settings</h1>
           <p className="mt-2 max-w-2xl text-body-md text-on-surface-variant">
@@ -254,7 +254,7 @@ export default function SettingsPage() {
                 onChange={(value) => setField("room_type", value)}
               />
             </div>
-            <div className="mt-6 grid grid-cols-4 gap-4">
+            <div className="mt-6 grid grid-cols-1 gap-4 min-[520px]:grid-cols-2 lg:grid-cols-4">
               <CounterInput
                 label="Accommodates"
                 min={1}

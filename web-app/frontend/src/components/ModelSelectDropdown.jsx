@@ -18,16 +18,16 @@ export default function ModelSelectDropdown({ value, accuracy, relativeError, on
   }, []);
 
   return (
-    <div ref={wrapperRef} className="relative w-full sm:w-[260px]">
+    <div ref={wrapperRef} className="relative w-full min-w-0 sm:w-[260px]">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="flex min-h-12 w-full items-center justify-between rounded-full bg-[#f1f5f9] px-5 text-left text-label-md font-bold text-on-surface transition hover:bg-[#e9eef5]"
+        className="flex min-h-12 w-full min-w-0 items-center justify-between rounded-full bg-[#f1f5f9] px-4 text-left text-[13px] font-bold text-on-surface transition hover:bg-[#e9eef5] sm:px-5 sm:text-label-md"
         aria-label={label}
         aria-expanded={open}
       >
-        <span>{value}</span>
-        <span className="ml-4 flex items-center gap-4 text-on-surface-variant">
+        <span className="min-w-0 truncate">{value}</span>
+        <span className="ml-3 flex shrink-0 items-center gap-2 text-on-surface-variant sm:ml-4 sm:gap-4">
           <span className="inline-flex items-center gap-1">
             <TrendingUp size={16} />
             {accuracy}%
