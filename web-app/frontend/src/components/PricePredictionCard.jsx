@@ -7,7 +7,7 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
   const strokeDasharray = `${progress * circumference} ${circumference}`;
 
   return (
-    <article className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl bg-surface-container-lowest px-6 pb-10 pt-6 shadow-ambient sm:p-6 md:p-7 lg:p-8">
+    <article className="flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl bg-surface-container-lowest px-6 pb-10 pt-6 shadow-ambient sm:p-6 md:p-7 lg:p-8">
       <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row">
         <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Price Prediction</h2>
         <ModelSelectDropdown

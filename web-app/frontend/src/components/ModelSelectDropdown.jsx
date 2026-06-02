@@ -40,7 +40,7 @@ export default function ModelSelectDropdown({ value, accuracy, relativeError, on
         </span>
       </button>
       {open && (
-        <div className="no-scrollbar absolute left-0 right-0 top-[calc(100%+8px)] z-[900] max-h-[236px] overflow-y-auto rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 shadow-ambient">
+        <div className="no-scrollbar absolute left-0 right-0 top-[calc(100%+8px)] z-[900] max-h-[190px] overflow-y-auto rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 shadow-ambient">
           {modelOptions.map((model) => (
             <button
               key={model}

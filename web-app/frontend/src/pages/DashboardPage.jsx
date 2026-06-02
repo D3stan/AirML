@@ -62,7 +62,7 @@ export default function DashboardPage() {
             occupancy={predictions.occupancy}
             onModelChange={(model) => updateModel("price", model)}
           />
-          <article className="flex min-h-[560px] min-w-0 flex-[1.48] flex-col overflow-hidden rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8 lg:min-h-0">
+          <article className="flex min-h-[560px] min-w-0 flex-[1.48] flex-col overflow-visible rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8 lg:min-h-0">
             <div className="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row">
               <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Occupancy Prediction</h2>
               <ModelSelectDropdown
