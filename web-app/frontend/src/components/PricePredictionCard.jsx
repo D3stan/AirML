@@ -19,7 +19,7 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
         />
       </div>
 
-      <div className="grid flex-1 grid-cols-[minmax(0,1fr)_128px] items-center gap-4 sm:grid-cols-[minmax(0,1fr)_156px] sm:gap-6 lg:grid-cols-[minmax(0,1fr)_180px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_200px]">
+      <div className="grid flex-1 grid-cols-[minmax(0,1fr)_118px] items-center gap-4 sm:grid-cols-[minmax(0,1fr)_138px] sm:gap-6 lg:grid-cols-[minmax(0,1fr)_150px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_160px]">
         <div className="min-w-0">
           <div className="grid gap-4 lg:hidden">
             <div className="text-center">
@@ -64,8 +64,9 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
           </div>
         </div>
 
-        <div className="flex justify-end pr-1 sm:pr-3 lg:pr-5 xl:pr-7">
-          <div className="relative h-32 w-32 shrink-0 sm:h-40 sm:w-40 lg:h-40 lg:w-40 xl:h-44 xl:w-44">
+        {/* <div className="flex justify-end pr-1 sm:pr-3 lg:pr-5 xl:pr-7"> */}
+        <div className="flex justify-center">
+          <div className="relative h-28 w-28 shrink-0 sm:h-32 sm:w-32 lg:h-36 lg:w-36 xl:h-36 xl:w-36">
             <svg className="-rotate-90" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="44" fill="none" stroke="#e8e4e4" strokeWidth="12" />
               <circle
@@ -87,7 +88,7 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
                 <span className="text-[10px] font-semibold text-on-surface-variant sm:text-[11px]">days</span>
               </div>
               <span className="mt-2 text-[11px] font-extrabold text-primary sm:mt-3 sm:text-[13px] lg:text-[14px]">
-                EUR {occupancy.annual_revenue.toLocaleString("en-US")}
+                {occupancy.annual_revenue.toLocaleString("en-US")} €
               </span>
             </div>
           </div>
