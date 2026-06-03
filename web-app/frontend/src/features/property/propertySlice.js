@@ -1,11 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { defaultPropertySettings } from "../../data/mockData.js";
+import { amenityOptions, defaultPropertySettings } from "../../data/mockData.js";
 import { loadPropertySettings } from "../../utils/storage.js";
 
 const initialState = loadPropertySettings(defaultPropertySettings);
 
-function normalizedAmenity(value) {
-  return value.trim().toLowerCase();
+function orderedAmenities(amenities) {
+  const selectedSet = new Set(amenities ?? []);
+  return [
+    ...amenityOptions.filter((amenity) => selectedSet.has(amenity)),
+    ...(amenities ?? []).filter((amenity) => !amenityOptions.includes(amenity)),
+  ];
 }
 
 const propertySlice = createSlice({
@@ -25,33 +29,18 @@ const propertySlice = createSlice({
       if (state.amenities.includes(amenity)) {
         state.amenities = state.amenities.filter((item) => item !== amenity);
       } else {
-        state.amenities.push(amenity);
+        state.amenities = orderedAmenities([...state.amenities, amenity]);
       }
     },
-    addAvailableAmenity(state, action) {
-      const amenity = action.payload.trim();
-      if (!amenity) {
-        return;
-      }
-
-      state.available_amenities ??= [];
-      state.amenities ??= [];
-
-      const alreadyExists = state.available_amenities.some(
-        (availableAmenity) => normalizedAmenity(availableAmenity) === normalizedAmenity(amenity),
-      );
-
-      if (alreadyExists) {
-        return;
-      }
-
-      state.available_amenities.push(amenity);
-      state.amenities.push(amenity);
-    },
-    removeAvailableAmenity(state, action) {
-      const amenity = action.payload;
-      state.available_amenities = (state.available_amenities ?? []).filter((item) => item !== amenity);
-      state.amenities = (state.amenities ?? []).filter((item) => item !== amenity);
+    setVisibleAmenities(state, action) {
+      const nextVisibleAmenities = orderedAmenities(action.payload);
+      const previousVisibleAmenities = new Set(state.available_amenities ?? []);
+      const newlyVisibleAmenities = nextVisibleAmenities.filter((amenity) => !previousVisibleAmenities.has(amenity));
+      state.available_amenities = nextVisibleAmenities;
+      state.amenities = orderedAmenities([
+        ...(state.amenities ?? []).filter((amenity) => nextVisibleAmenities.includes(amenity)),
+        ...newlyVisibleAmenities,
+      ]);
     },
     addReview(state, action) {
       const text = action.payload.text.trim();
@@ -85,11 +74,10 @@ const propertySlice = createSlice({
 });
 
 export const {
-  addAvailableAmenity,
   addReview,
   deleteReview,
-  removeAvailableAmenity,
   resetProperty,
+  setVisibleAmenities,
   toggleAmenity,
   updatePropertyField,
   updatePropertyFields,

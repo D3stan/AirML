@@ -2,6 +2,7 @@ import {
   BadgeEuro,
   Building2,
   CalendarClock,
+  Check,
   CheckCircle2,
   ChevronDown,
   MapPin,
@@ -9,6 +10,8 @@ import {
   Pencil,
   Plus,
   Save,
+  Search,
+  SlidersHorizontal,
   Trash2,
   X,
 } from "lucide-react";
@@ -23,6 +26,7 @@ import PropertyMapCard from "../components/PropertyMapCard.jsx";
 import SettingsSection from "../components/SettingsSection.jsx";
 import ToggleInput from "../components/ToggleInput.jsx";
 import {
+  amenityOptions,
   cityOptions,
   cityProfiles,
   defaultPredictions,
@@ -32,11 +36,10 @@ import {
 } from "../data/mockData.js";
 import { resetPredictions, setPredictions } from "../features/predictions/predictionsSlice.js";
 import {
-  addAvailableAmenity,
   addReview,
   deleteReview,
-  removeAvailableAmenity,
   resetProperty,
+  setVisibleAmenities,
   toggleAmenity,
   updatePropertyField,
   updatePropertyFields,
@@ -53,6 +56,14 @@ import {
 
 function valuesEqual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function orderedAmenityList(amenities) {
+  const amenitySet = new Set(amenities ?? []);
+  return [
+    ...amenityOptions.filter((amenity) => amenitySet.has(amenity)),
+    ...(amenities ?? []).filter((amenity) => !amenityOptions.includes(amenity)).sort(),
+  ];
 }
 
 function numberValue(value) {
@@ -144,7 +155,9 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const property = useSelector((state) => state.property);
   const [savedProperty, setSavedProperty] = useState(() => loadSavedPropertySettings(defaultPropertySettings));
-  const [newAmenity, setNewAmenity] = useState("");
+  const [amenityManagerOpen, setAmenityManagerOpen] = useState(false);
+  const [draftVisibleAmenities, setDraftVisibleAmenities] = useState([]);
+  const [amenitySearch, setAmenitySearch] = useState("");
   const [newReviewText, setNewReviewText] = useState("");
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [editingReviewText, setEditingReviewText] = useState("");
@@ -158,26 +171,49 @@ export default function SettingsPage() {
   }, [property]);
 
   const isChanged = (field) => !valuesEqual(property[field], savedProperty[field]);
-  const availableAmenities = property.available_amenities ?? [];
-  const selectedAmenities = property.amenities ?? [];
+  const visibleAmenities = orderedAmenityList(property.available_amenities ?? []);
+  const savedVisibleAmenities = orderedAmenityList(savedProperty.available_amenities ?? []);
+  const selectedAmenities = orderedAmenityList(property.amenities ?? []);
+  const savedSelectedAmenities = orderedAmenityList(savedProperty.amenities ?? []);
   const reviews = property.reviews ?? [];
-  const normalizedNewAmenity = newAmenity.trim().toLowerCase();
-  const canAddAmenity =
-    Boolean(normalizedNewAmenity) &&
-    !availableAmenities.some((amenity) => amenity.trim().toLowerCase() === normalizedNewAmenity);
-  const hasAmenitiesChanged = isChanged("available_amenities") || isChanged("amenities");
+  const hasAmenitiesChanged =
+    !valuesEqual(visibleAmenities, savedVisibleAmenities) || !valuesEqual(selectedAmenities, savedSelectedAmenities);
+  const normalizedAmenitySearch = amenitySearch.trim().toLowerCase();
+  const filteredShownAmenities = orderedAmenityList(draftVisibleAmenities).filter((amenity) =>
+    amenity.toLowerCase().includes(normalizedAmenitySearch),
+  );
+  const filteredHiddenAmenities = amenityOptions.filter(
+    (amenity) =>
+      !draftVisibleAmenities.includes(amenity) && amenity.toLowerCase().includes(normalizedAmenitySearch),
+  );
 
   const setField = (field, value) => {
     dispatch(updatePropertyField({ field, value }));
   };
 
-  const addAmenity = () => {
-    if (!canAddAmenity) {
-      return;
-    }
+  const openAmenityManager = () => {
+    setDraftVisibleAmenities(visibleAmenities);
+    setAmenitySearch("");
+    setAmenityManagerOpen(true);
+  };
 
-    dispatch(addAvailableAmenity(newAmenity.trim()));
-    setNewAmenity("");
+  const closeAmenityManager = () => {
+    setAmenityManagerOpen(false);
+    setDraftVisibleAmenities([]);
+    setAmenitySearch("");
+  };
+
+  const toggleDraftAmenity = (amenity) => {
+    setDraftVisibleAmenities((currentAmenities) =>
+      currentAmenities.includes(amenity)
+        ? currentAmenities.filter((currentAmenity) => currentAmenity !== amenity)
+        : [...currentAmenities, amenity],
+    );
+  };
+
+  const applyVisibleAmenities = () => {
+    dispatch(setVisibleAmenities(draftVisibleAmenities));
+    closeAmenityManager();
   };
 
   const addManualReview = () => {
@@ -375,29 +411,24 @@ export default function SettingsPage() {
           </SettingsSection>
 
           <SettingsSection icon={BadgeEuro} title="Pricing">
-            <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(260px,0.72fr)]">
-              <div>
-                <Field label="Nightly price" changed={isChanged("nightly_price")} savedValue={savedProperty.nightly_price}>
-                  <div className="flex min-h-[56px] overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-fixed">
-                    <input
-                      className={`min-w-0 flex-1 px-4 text-body-md text-on-surface outline-none ${modifiedClasses(
-                        isChanged("nightly_price"),
-                      )}`}
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={property.nightly_price}
-                      onChange={(event) => setField("nightly_price", Math.max(0, numberValue(event.target.value)))}
-                    />
-                    <span className="flex items-center border-l border-outline-variant bg-surface-container px-4 text-label-md text-on-surface-variant">
-                      €/night
-                    </span>
-                  </div>
-                </Field>
-              </div>
-              <div className="flex items-center rounded-xl border border-outline-variant/65 bg-surface-container-lowest px-4 py-3 text-label-sm text-on-surface-variant">
-                Current or desired listing price per night.
-              </div>
+            <div className="max-w-[560px]">
+              <Field label="Nightly price" changed={isChanged("nightly_price")} savedValue={savedProperty.nightly_price}>
+                <div className="flex min-h-[56px] overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-fixed">
+                  <input
+                    className={`min-w-0 flex-1 px-4 text-body-md text-on-surface outline-none ${modifiedClasses(
+                      isChanged("nightly_price"),
+                    )}`}
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={property.nightly_price}
+                    onChange={(event) => setField("nightly_price", Math.max(0, numberValue(event.target.value)))}
+                  />
+                  <span className="flex items-center border-l border-outline-variant bg-surface-container px-4 text-label-md text-on-surface-variant">
+                    €/night
+                  </span>
+                </div>
+              </Field>
             </div>
           </SettingsSection>
 
@@ -405,47 +436,41 @@ export default function SettingsPage() {
             <div
               className={`rounded-2xl border p-4 transition ${modifiedClasses(hasAmenitiesChanged)}`}
             >
-              <div className="mb-3 flex min-h-5 items-center justify-between gap-3">
-                <span className="text-label-md text-on-surface-variant">Selectable amenities</span>
+              <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <div className="grid gap-1">
+                  <span className="text-label-md text-on-surface-variant">
+                    Shown amenities {visibleAmenities.length} / {amenityOptions.length}
+                  </span>
+                  <span className="text-label-sm text-on-surface-variant">
+                    Selected {selectedAmenities.length}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={openAmenityManager}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-variant px-4 py-2 text-label-md text-on-surface-variant transition hover:border-primary hover:text-primary"
+                >
+                  <SlidersHorizontal size={17} />
+                  Manage amenities
+                </button>
               </div>
               <div className="flex flex-wrap gap-3">
-                {availableAmenities.map((amenity) => (
-                  <AmenityPill
-                    key={amenity}
-                    label={amenity}
-                    selected={selectedAmenities.includes(amenity)}
-                    onToggle={() => dispatch(toggleAmenity(amenity))}
-                    onRemove={() => dispatch(removeAvailableAmenity(amenity))}
-                  />
-                ))}
-                <span className="inline-flex min-h-[38px] items-center overflow-hidden rounded-full border border-outline-variant bg-surface-container-lowest text-label-md shadow-ambient-soft">
-                  <input
-                    type="text"
-                    value={newAmenity}
-                    onChange={(event) => setNewAmenity(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        addAmenity();
-                      }
-                    }}
-                    placeholder="New amenity"
-                    className="h-full min-w-[160px] bg-transparent px-4 py-2 text-on-surface outline-none placeholder:text-on-surface-variant/70"
-                  />
-                  <button
-                    type="button"
-                    onClick={addAmenity}
-                    disabled={!canAddAmenity}
-                    className="flex h-full min-h-[38px] w-11 items-center justify-center border-l border-outline-variant text-primary transition hover:bg-primary-fixed disabled:cursor-not-allowed disabled:text-on-surface-variant/45 disabled:hover:bg-transparent"
-                    aria-label="Add amenity"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </span>
+                {visibleAmenities.length > 0 ? (
+                  visibleAmenities.map((amenity) => (
+                    <AmenityPill
+                      key={amenity}
+                      label={amenity}
+                      selected={selectedAmenities.includes(amenity)}
+                      onToggle={() => dispatch(toggleAmenity(amenity))}
+                    />
+                  ))
+                ) : (
+                  <p className="text-body-md text-on-surface-variant">No amenities are shown.</p>
+                )}
               </div>
               {hasAmenitiesChanged && (
                 <p className="mt-3 text-[11px] font-semibold text-primary">
-                  Saved selected: {(savedProperty.amenities ?? []).join(", ")}
+                  Saved selected: {savedSelectedAmenities.length > 0 ? savedSelectedAmenities.join(", ") : "None"}
                 </p>
               )}
             </div>
@@ -504,7 +529,7 @@ export default function SettingsPage() {
                 </div>
               ) : (
                 <div className="grid gap-6">
-                  <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(260px,0.72fr)]">
+                  <div className="max-w-[560px]">
                     <Field
                       label="Review frequency"
                       changed={isChanged("review_frequency_days")}
@@ -526,9 +551,6 @@ export default function SettingsPage() {
                         </span>
                       </div>
                     </Field>
-                    <div className="flex items-center rounded-xl border border-outline-variant/65 bg-surface-container-lowest px-4 py-3 text-label-sm text-on-surface-variant">
-                      Average number of days between two guest reviews.
-                    </div>
                   </div>
 
                   <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-4">
@@ -628,6 +650,122 @@ export default function SettingsPage() {
           <BottomActionBar onReset={handleReset} onSave={saveCurrentSettings} onRunSimulation={handleRunSimulation} />
         </div>
       </main>
+      {amenityManagerOpen && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center px-4 py-8">
+          <button
+            type="button"
+            aria-label="Close amenities manager"
+            onClick={closeAmenityManager}
+            className="absolute inset-0 bg-inverse-surface/30 backdrop-blur-sm"
+          />
+          <section className="relative z-10 flex max-h-[82vh] w-full max-w-[760px] flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8">
+            <div className="mb-5 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+              <div>
+                <h3 className="font-display text-headline-md text-on-surface">Manage amenities</h3>
+                <p className="mt-1 text-label-sm text-on-surface-variant">
+                  {draftVisibleAmenities.length} shown of {amenityOptions.length}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeAmenityManager}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface shadow-ambient-soft transition hover:border-primary hover:text-primary self-start sm:self-auto"
+                aria-label="Close amenities manager"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mb-5 flex min-h-[52px] items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-fixed">
+              <Search size={18} className="shrink-0 text-on-surface-variant" />
+              <input
+                type="text"
+                value={amenitySearch}
+                onChange={(event) => setAmenitySearch(event.target.value)}
+                placeholder="Search amenities"
+                className="min-w-0 flex-1 bg-transparent text-body-md text-on-surface outline-none placeholder:text-on-surface-variant/70"
+              />
+              {amenitySearch && (
+                <button
+                  type="button"
+                  onClick={() => setAmenitySearch("")}
+                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-on-surface transition hover:bg-surface-container"
+                  aria-label="Clear amenities search"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
+
+            <div className="no-scrollbar grid max-h-[52vh] gap-6 overflow-y-auto pr-1">
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h4 className="text-label-md text-on-surface">Shown amenities</h4>
+                  <span className="text-label-sm text-on-surface-variant">{filteredShownAmenities.length}</span>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {filteredShownAmenities.length > 0 ? (
+                    filteredShownAmenities.map((amenity) => (
+                      <button
+                        key={amenity}
+                        type="button"
+                        onClick={() => toggleDraftAmenity(amenity)}
+                        className="flex min-h-12 items-center gap-3 rounded-xl border border-primary bg-primary-fixed/55 px-4 py-3 text-left text-label-md text-on-primary-fixed transition hover:bg-primary-fixed"
+                      >
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary text-on-primary">
+                          <Check size={15} />
+                        </span>
+                        <span>{amenity}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-label-md text-on-surface-variant sm:col-span-2">
+                      No shown amenities match your search.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h4 className="text-label-md text-on-surface">Hidden amenities</h4>
+                  <span className="text-label-sm text-on-surface-variant">{filteredHiddenAmenities.length}</span>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {filteredHiddenAmenities.length > 0 ? (
+                    filteredHiddenAmenities.map((amenity) => (
+                      <button
+                        key={amenity}
+                        type="button"
+                        onClick={() => toggleDraftAmenity(amenity)}
+                        className="flex min-h-12 items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-left text-label-md text-on-surface-variant transition hover:border-primary hover:text-primary"
+                      >
+                        <span className="h-6 w-6 shrink-0 rounded-lg border border-outline-variant bg-surface-container-lowest" />
+                        <span>{amenity}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-label-md text-on-surface-variant sm:col-span-2">
+                      No hidden amenities match your search.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={applyVisibleAmenities}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-label-md text-on-primary shadow-ambient-soft transition hover:bg-tertiary"
+              >
+                <Save size={18} />
+                Apply
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
