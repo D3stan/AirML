@@ -2,6 +2,7 @@
     "city": 0.0,
     "property_type": 3.0,
     "room_type": 0.0,
+    "geo_cluster": 8.0,
     "Air conditioning": 1.0,
     "Bed linens": 1.0,
     "Bidet": 0.0,
@@ -63,5 +64,6 @@
     "distance_from_poi": 32712.902053289086,
     "poi_density": 0.0,
     "month_sin": 0.49999999999999994,
-    "month_cos": 0.8660254037844387
+    "month_cos": 0.8660254037844387,
+    "distance_from_geo_cluster": 0.0314456500625986
 }
