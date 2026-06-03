@@ -67,9 +67,9 @@ Quattro task predittivi sui dati Airbnb (Milano, scrape 2025-09-22):
 - **Task D — Recommendation**: suggerire alloggi a un utente.
 
 ### 1.2 Fonte e Struttura del Dataset
-- **`listings.csv`** (~75 colonne, una riga per alloggio): anagrafica alloggio, host, location, prezzo, amenities, score recensioni aggregati, occupancy stimata.
-- **`reviews.csv`** (6 colonne, una riga per recensione): testi liberi con `listing_id`, `reviewer_id`, `date`, `comments`.
-- *`calendar.csv` escluso* (vedi §0.1).
+- `listings.csv` (~75 colonne, una riga per alloggio): anagrafica alloggio, host, location, prezzo, amenities, score recensioni aggregati, occupancy stimata.
+- `reviews.csv` (6 colonne, una riga per recensione): testi liberi con `listing_id`, `reviewer_id`, `date`, `comments`.
+- `calendar.csv` escluso* (vedi §0.1).
 
 ### 1.3 Descrizione delle Variabili
 Variabili-chiave di `listings.csv`:

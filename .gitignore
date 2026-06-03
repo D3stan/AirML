@@ -221,3 +221,6 @@ __marimo__/
 
 # Vscode
 .vscode
+
+# Catboost
+catboost_info
