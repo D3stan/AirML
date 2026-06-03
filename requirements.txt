@@ -9,6 +9,7 @@ requests
 nbstripout
 vaderSentiment
 xgboost
+catboost
 # imbalanced-learn
 # scikit-surprise
 # langdetect
@@ -20,7 +21,6 @@ scipy
 # jupyter
 ipykernel
 nbdime
-xgboost
 
 # Optional / useful extras
 # lightgbm
