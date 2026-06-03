@@ -3,9 +3,9 @@
 - [ ] Descrivere nuovo preprocessing
 - [ ] Mettere a posto preprocessing
 - [ ] Descrivere modelli:
-    - [ ] Lasso
-    - [ ] Ridge
-    - [ ] Ridge polinomiale
+    - [x] Lasso
+    - [x] Ridge
+    - [x] Ridge polinomiale
     - [ ] Tree-based
     - [ ] Random Forest
     - [ ] CatBoost
@@ -13,7 +13,7 @@
 - [ ] Analisi esplorativa
     - [ ] Creazione nuove variabili combinate
     - [ ] Geocluster
-    - [ ]
+    - [ ] POI e distanze
 - [ ] Confronto modelli
     - [ ] Confronto metriche
     - [ ] Confronto feature importance
