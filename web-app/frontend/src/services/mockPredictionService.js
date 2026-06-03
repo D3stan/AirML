@@ -35,8 +35,22 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function activePredictionSettings(propertySettings) {
+  const settingsWithoutManualPrice = { ...propertySettings };
+  delete settingsWithoutManualPrice.nightly_price;
+
+  if (settingsWithoutManualPrice.has_reviews) {
+    return settingsWithoutManualPrice;
+  }
+
+  const settingsWithoutInactiveReviews = { ...settingsWithoutManualPrice };
+  delete settingsWithoutInactiveReviews.review_frequency_days;
+  delete settingsWithoutInactiveReviews.reviews;
+  return settingsWithoutInactiveReviews;
+}
+
 export function generateMockPredictions(propertySettings) {
-  const hash = hashString(stableStringify(propertySettings));
+  const hash = hashString(stableStringify(activePredictionSettings(propertySettings)));
   const amenities = propertySettings.amenities ?? [];
   const isEntirePlace = propertySettings.room_type === "Entire home/apt";
   const cityPremium = {

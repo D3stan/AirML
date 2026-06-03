@@ -41,13 +41,35 @@ export function removeFromStorage(key, storageType = "local") {
   storageFor(storageType).removeItem(key);
 }
 
+function applyMissingDefaults(settings, fallback) {
+  if (!settings || typeof settings !== "object") {
+    return fallback;
+  }
+
+  return Object.keys(fallback).reduce(
+    (mergedSettings, key) => {
+      if (Object.prototype.hasOwnProperty.call(mergedSettings, key)) {
+        return mergedSettings;
+      }
+
+      return {
+        ...mergedSettings,
+        [key]: fallback[key],
+      };
+    },
+    { ...settings },
+  );
+}
+
 export function loadPropertySettings(fallback) {
   const savedSettings = loadFromStorage(PROPERTY_STORAGE_KEY, fallback);
-  return loadFromStorage(PROPERTY_DRAFT_STORAGE_KEY, savedSettings, "session");
+  const savedWithDefaults = applyMissingDefaults(savedSettings, fallback);
+  const draftSettings = loadFromStorage(PROPERTY_DRAFT_STORAGE_KEY, savedWithDefaults, "session");
+  return applyMissingDefaults(draftSettings, fallback);
 }
 
 export function loadSavedPropertySettings(fallback) {
-  return loadFromStorage(PROPERTY_STORAGE_KEY, fallback);
+  return applyMissingDefaults(loadFromStorage(PROPERTY_STORAGE_KEY, fallback), fallback);
 }
 
 export function savePropertySettings(settings) {
