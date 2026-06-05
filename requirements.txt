@@ -10,6 +10,8 @@ nbstripout
 vaderSentiment
 xgboost
 catboost
+tqdm
+sentence-transformers
 # imbalanced-learn
 # scikit-surprise
 # langdetect
