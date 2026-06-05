@@ -13,6 +13,13 @@ export const occupancyModelFallback = {
   relativeError: 3,
 };
 
+export const priceModelFallback = {
+  id: "logxgb",
+  name: "XGBoost Log",
+  accuracy: 75,
+  relativeError: 25,
+};
+
 export const cityProfiles = {
   Rome: {
     latitude: 41.9028,
@@ -147,7 +154,7 @@ export const defaultPropertySettings = {
   has_availability: true,
   availability_365: 365,
   has_reviews: true,
-  review_frequency_days: 15,
+  review_span_days: 1500,
   reviews: [
     {
       id: "default-review-1",
@@ -162,9 +169,10 @@ export const defaultPredictions = {
     lower: 126,
     upper: 144,
     unit: "euro_per_night",
-    model: "XGBoost",
-    accuracy: 93,
-    relativeError: 7,
+    model: priceModelFallback.name,
+    model_id: priceModelFallback.id,
+    accuracy: priceModelFallback.accuracy,
+    relativeError: priceModelFallback.relativeError,
   },
   occupancy: {
     annual_days: 249,

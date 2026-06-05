@@ -9,7 +9,7 @@ from fastapi import HTTPException
 
 from app.models.occupancy import OCCUPANCY_MODELS
 from app.schemas.occupancy import OccupancyPredictionRequest
-from app.services.artifacts import load_occupancy_artifacts, load_occupancy_metadata
+from app.services.artifacts import load_occupancy_artifacts, load_occupancy_metadata, load_price_artifacts
 from app.services.occupancy_features import MONTHS, OccupancyFeaturePipeline
 
 
@@ -21,11 +21,11 @@ def _to_json(value: Any) -> str:
 
 
 def _feature_debug_view(feature_row: dict[str, Any]) -> dict[str, Any]:
-    """Return the subset of features that usually explains bad predictions.
+    """Restituisce le feature piu' utili per capire predizioni anomale.
 
-    The full dataframe row can contain many training columns and is noisy in
-    the terminal. This view keeps the raw user-driven values, the engineered
-    ratios, the geo features, and the month encoding visible together.
+    La riga completa contiene molte colonne di training e rende il terminale
+    rumoroso. Questa vista tiene insieme input utente, ratio, feature
+    geografiche e codifica mese.
     """
 
     debug_keys = (
@@ -51,6 +51,7 @@ def _feature_debug_view(feature_row: dict[str, Any]) -> dict[str, Any]:
         "distance_from_geo_cluster",
         "has_reviews",
         "reviews_per_month",
+        "review_span_days",
         "avg_days_between_reviews",
         "month_sin",
         "month_cos",
@@ -64,7 +65,19 @@ def list_occupancy_models() -> list[dict[str, int | str]]:
 
 def settings_options() -> dict[str, Any]:
     metadata = load_occupancy_metadata()
-    amenities = [amenity for amenity in metadata["top_amenities"] if amenity != "Other"]
+    occupancy_amenities = [amenity for amenity in metadata["top_amenities"] if amenity != "Other"]
+    price_preprocessor, _price_model = load_price_artifacts()
+    price_amenities = [
+        str(amenity)
+        for amenity in price_preprocessor.named_transformers_["amenities"].mlb.classes_
+        if str(amenity) != "Other"
+    ]
+    seen_amenities: set[str] = set()
+    amenities = []
+    for amenity in [*occupancy_amenities, *sorted(price_amenities)]:
+        if amenity not in seen_amenities:
+            seen_amenities.add(amenity)
+            amenities.append(amenity)
 
     return {
         "cities": metadata["cities"],
@@ -95,7 +108,7 @@ def _predict_month(feature_row: dict[str, Any]) -> Any:
     try:
         import pandas as pd
     except Exception as exc:
-        message = f"Missing backend ML dependency while building occupancy DataFrame: {exc}"
+        message = f"Dipendenza pandas mancante durante la costruzione del DataFrame occupancy: {exc}"
         logger.exception(message)
         raise HTTPException(status_code=503, detail=message) from exc
 
@@ -108,14 +121,14 @@ def _predict_month(feature_row: dict[str, Any]) -> Any:
         transformed = preprocessor.transform(dataframe)
         prediction = model.predict(transformed)
     except Exception as exc:
-        message = f"Unable to run occupancy inference: {exc}"
+        message = f"Impossibile eseguire inferenza occupancy: {exc}"
         logger.exception(message)
         raise HTTPException(status_code=500, detail=message) from exc
 
     try:
         return prediction[0]
-    except Exception as exc:  # pragma: no cover - malformed third-party model output
-        message = f"Unexpected occupancy model output: {prediction!r}"
+    except Exception as exc:  # pragma: no cover - output malformato da libreria esterna
+        message = f"Output inatteso dal modello occupancy: {prediction!r}"
         logger.error(message)
         raise HTTPException(status_code=500, detail=message) from exc
 
@@ -145,9 +158,9 @@ def predict_occupancy(payload: OccupancyPredictionRequest) -> dict[str, Any]:
         raw_prediction = _predict_month(feature_row)
         prediction = _coerce_prediction(raw_prediction, month_label)
 
-        # The current artifact predicts monthly occupancy_rate in [0, 1].
-        # If a future model returns days directly, values outside [0, 1] are
-        # treated as days and still clamped to the month length.
+        # L'artifact attuale predice occupancy_rate mensile in [0, 1].
+        # Se un modello futuro restituisce giorni diretti, i valori fuori da
+        # [0, 1] vengono trattati come giorni e clampati alla durata del mese.
         predicted_days = prediction * days_in_month if 0 <= prediction <= 1 else prediction
         monthly[month_label] = min(days_in_month, max(0, round(predicted_days)))
         month_debug_rows.append(

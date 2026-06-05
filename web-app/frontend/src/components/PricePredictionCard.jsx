@@ -1,7 +1,7 @@
 import { Euro } from "lucide-react";
 import ModelSelectDropdown from "./ModelSelectDropdown.jsx";
 
-export default function PricePredictionCard({ prediction, occupancy, onModelChange }) {
+export default function PricePredictionCard({ prediction, occupancy, onModelChange, options, disabled = false, loading = false }) {
   const circumference = 2 * Math.PI * 44;
   const progress = Math.min(Math.max(occupancy.annual_days / 365, 0), 1);
   const strokeDasharray = `${progress * circumference} ${circumference}`;
@@ -11,11 +11,14 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
       <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row">
         <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Price Prediction</h2>
         <ModelSelectDropdown
-          value={prediction.model}
+          value={prediction.model_id ?? prediction.model}
           accuracy={prediction.accuracy}
           relativeError={prediction.relativeError}
           onChange={onModelChange}
           label="Select price prediction model"
+          options={options}
+          disabled={disabled}
+          loading={loading}
         />
       </div>
 

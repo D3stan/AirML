@@ -44,7 +44,7 @@ function activePredictionSettings(propertySettings) {
   }
 
   const settingsWithoutInactiveReviews = { ...settingsWithoutManualPrice };
-  delete settingsWithoutInactiveReviews.review_frequency_days;
+  delete settingsWithoutInactiveReviews.review_span_days;
   delete settingsWithoutInactiveReviews.reviews;
   return settingsWithoutInactiveReviews;
 }

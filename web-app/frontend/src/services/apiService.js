@@ -39,9 +39,33 @@ export async function fetchOccupancyModels() {
   return parseJsonResponse(response, "[AirML <- Backend] GET /models/occupancy response");
 }
 
+export async function fetchPriceModels() {
+  const response = await fetch(`${API_BASE_URL}/models/price`);
+  return parseJsonResponse(response, "[AirML <- Backend] GET /models/price response");
+}
+
 export async function fetchSettingsOptions() {
   const response = await fetch(`${API_BASE_URL}/settings/options`);
   return parseJsonResponse(response, "[AirML <- Backend] GET /settings/options response");
+}
+
+export async function predictPrice(modelId, propertySettings) {
+  const requestPayload = {
+    model_id: modelId,
+    property: propertySettings,
+  };
+
+  logJson("[AirML -> Backend] POST /predict-price request", requestPayload);
+
+  const response = await fetch(`${API_BASE_URL}/predict-price`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(requestPayload),
+  });
+
+  return parseJsonResponse(response, "[AirML <- Backend] POST /predict-price response");
 }
 
 export async function predictOccupancy(modelId, propertySettings) {
@@ -61,6 +85,19 @@ export async function predictOccupancy(modelId, propertySettings) {
   });
 
   return parseJsonResponse(response, "[AirML <- Backend] POST /predict-occupancy response");
+}
+
+export function pricePredictionFromApi(apiPrediction) {
+  return {
+    prediction: Number(apiPrediction.prediction || 0),
+    lower: Number(apiPrediction.lower || 0),
+    upper: Number(apiPrediction.upper || 0),
+    unit: "euro_per_night",
+    model: apiPrediction.model.name,
+    model_id: apiPrediction.model.id,
+    accuracy: apiPrediction.model.accuracy,
+    relativeError: apiPrediction.model.relativeError,
+  };
 }
 
 export function occupancyPredictionFromApi(apiPrediction, pricePrediction) {

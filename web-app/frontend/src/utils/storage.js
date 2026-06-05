@@ -71,20 +71,37 @@ function applyMissingDefaults(settings, fallback) {
   );
 }
 
+function migratePropertySettings(settings) {
+  if (!settings || typeof settings !== "object") {
+    return settings;
+  }
+
+  const migratedSettings = { ...settings };
+  if (
+    !Object.prototype.hasOwnProperty.call(migratedSettings, "review_span_days") &&
+    Object.prototype.hasOwnProperty.call(migratedSettings, "review_frequency_days")
+  ) {
+    migratedSettings.review_span_days = migratedSettings.review_frequency_days;
+  }
+  delete migratedSettings.review_frequency_days;
+  return migratedSettings;
+}
+
 export function loadPropertySettings(fallback) {
-  const savedSettings = loadFromStorage(PROPERTY_STORAGE_KEY, fallback);
+  const savedSettings = migratePropertySettings(loadFromStorage(PROPERTY_STORAGE_KEY, fallback));
   const savedWithDefaults = applyMissingDefaults(savedSettings, fallback);
-  const draftSettings = loadFromStorage(PROPERTY_DRAFT_STORAGE_KEY, savedWithDefaults, "session");
+  const draftSettings = migratePropertySettings(loadFromStorage(PROPERTY_DRAFT_STORAGE_KEY, savedWithDefaults, "session"));
   return applyMissingDefaults(draftSettings, fallback);
 }
 
 export function loadSavedPropertySettings(fallback) {
-  return applyMissingDefaults(loadFromStorage(PROPERTY_STORAGE_KEY, fallback), fallback);
+  return applyMissingDefaults(migratePropertySettings(loadFromStorage(PROPERTY_STORAGE_KEY, fallback)), fallback);
 }
 
 export function savePropertySettings(settings) {
-  saveToStorage(PROPERTY_STORAGE_KEY, settings);
-  logSavedSettings(settings);
+  const migratedSettings = migratePropertySettings(settings);
+  saveToStorage(PROPERTY_STORAGE_KEY, migratedSettings);
+  logSavedSettings(migratedSettings);
 }
 
 export function loadPropertyDraft(fallback) {
@@ -92,7 +109,7 @@ export function loadPropertyDraft(fallback) {
 }
 
 export function savePropertyDraft(settings) {
-  saveToStorage(PROPERTY_DRAFT_STORAGE_KEY, settings, "session");
+  saveToStorage(PROPERTY_DRAFT_STORAGE_KEY, migratePropertySettings(settings), "session");
 }
 
 export function clearPropertyDraft() {

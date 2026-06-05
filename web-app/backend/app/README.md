@@ -1,27 +1,29 @@
-# Backend AirML: flusso dati occupancy
+# Backend AirML: flusso dati price e occupancy
 
-Questo backend FastAPI e' diviso per responsabilita':
+Questo backend FastAPI riceve dati user-facing dalla pagina Settings e li trasforma nelle feature raw usate dai preprocessori salvati nel notebook `main.ipynb`.
 
-- `main.py`: crea l'app FastAPI, configura CORS e logging, monta i router.
-- `routers/`: contiene solo endpoint HTTP.
-- `schemas/`: valida i JSON del frontend con Pydantic.
-- `services/`: contiene logica applicativa, caricamento artifact, feature pipeline e inferenza.
-- `models/`: contiene registry statico dei modelli e metadata UI.
-- `core/`: contiene configurazione e path.
-- `ml/`: contiene classi di compatibilita' necessarie per caricare joblib legacy.
+## Struttura
 
-## JSON che arriva dal frontend
+- `main.py`: crea FastAPI, CORS, logging e monta i router.
+- `routers/`: espone endpoint HTTP.
+- `schemas/`: valida i JSON con Pydantic.
+- `services/`: carica artifact, costruisce feature raw ed esegue inferenza.
+- `models/`: contiene registry statici dei modelli disponibili.
+- `core/`: contiene path e configurazione.
+- `ml/`: contiene classi legacy necessarie per aprire i joblib esportati dal notebook.
 
-Il frontend chiama `POST /predict-occupancy` con un payload di questo tipo:
+## Payload frontend
+
+Il frontend invia dati della UI, non dataframe gia' trasformati:
 
 ```json
 {
-  "model_id": "xgboost",
+  "model_id": "logxgb",
   "property": {
     "city": "Rome",
     "neighbourhood_cleansed": "Trastevere",
-    "latitude": 41.900488,
-    "longitude": 12.526131,
+    "latitude": 41.9028,
+    "longitude": 12.4964,
     "property_type": "Entire rental unit",
     "room_type": "Entire home/apt",
     "amenities": ["Wifi", "Kitchen", "Air conditioning"],
@@ -31,134 +33,169 @@ Il frontend chiama `POST /predict-occupancy` con un payload di questo tipo:
     "beds": 2,
     "nightly_price": 120,
     "minimum_nights": 2,
+    "maximum_nights": 365,
+    "instant_bookable": true,
+    "has_availability": true,
+    "availability_365": 365,
     "has_reviews": true,
-    "review_frequency_days": 15
+    "review_span_days": 1500
   }
 }
 ```
 
-`schemas/occupancy.py` valida questo JSON. Il punto importante e' che questo non e' ancora un dataframe per il modello: sono dati user-facing della pagina Settings.
+`schemas/property.py` valida la property comune a price e occupancy. Per compatibilita' migra anche il vecchio `review_frequency_days` in `review_span_days`, ma il nome corretto del modello e' `review_span_days`.
 
-## Sequenza completa
+## Price
 
-1. `routers/occupancy.py` riceve la request e la passa a `predict_occupancy`.
+Endpoint:
 
-2. Pydantic valida:
-   - `model_id` obbligatorio;
-   - `property` con tipi e range minimi;
-   - campi extra ignorati, cosi' il frontend puo' inviare anche dati non usati dal modello.
+- `GET /models/price`
+- `POST /predict-price`
 
-3. `services/occupancy_service.py` controlla che `model_id` esista nel registry. Per ora il modello occupancy reale e' solo `xgboost`.
+Flusso:
 
-4. Il backend carica una sola volta, con cache, gli artifact:
-   - `web-app/artifacts/occ_model_preprocessor.joblib`;
-   - `web-app/artifacts/occ_model_xgboost.joblib`;
-   - `web-app/artifacts/occ_feature_metadata.json`.
-
-5. `OccupancyFeaturePipeline` costruisce una feature row raw compatibile col training:
-   - parte dai default/mediane salvati in `occ_feature_metadata.json`;
-   - sovrascrive solo i campi che il frontend puo' fornire in modo affidabile;
-   - mantiene i nomi feature esattamente uguali a `preprocessor.feature_names_in_`.
-
-6. Le categorie vengono normalizzate:
-   - `city` frontend viene convertita nella chiave training, per esempio `Rome -> roma`;
-   - `property_type` fuori dalle categorie note diventa `Other`;
-   - `room_type` fuori lista diventa `Entire home/apt`;
-   - amenities fuori dalla top list training diventano `Other`.
-
-7. I numerici vengono interpretati:
-   - `nightly_price` diventa la feature raw `price`;
-   - guests, bathrooms, bedrooms, beds e minimum nights vengono clampati solo per evitare input impossibili;
-   - `n_amenities` conta le amenities originali selezionate dall'utente.
-
-8. Le feature derivate vengono ricalcolate come nel notebook:
+1. `routers/price.py` riceve `PricePredictionRequest`.
+2. `services/price_service.py` controlla `model_id`. Il modello reale e' `logxgb`.
+3. `services/artifacts.py` carica con cache:
+   - `price_model_preprocessor.joblib`;
+   - `price_model_logxgb.joblib`;
+   - KMeans geografico per citta'.
+4. `PriceFeaturePipeline` crea le 66 feature raw viste da `price_model_preprocessor.feature_names_in_`.
+5. Le feature categoriche vengono normalizzate come nel notebook:
+   - `city` diventa l'id di training (`Rome -> roma`);
+   - `neighbourhood` diventa `city_neighbourhood`;
+   - `property_type`, `room_type`, `instant_bookable` usano le categorie del preprocessor;
+   - amenities non viste dal modello diventano `Other`.
+6. Le macro-categorie amenities vengono contate con le keyword del notebook (`n_kitchen`, `n_luxury`, `n_wifi`, ecc.).
+7. `availability_30`, `availability_60`, `availability_90` sono derivate da `availability_365`; se `has_availability=false` diventano 0.
+8. Vengono ricalcolate le feature strutturali:
    - `beds_per_person`;
    - `bedrooms_per_person`;
    - `bathrooms_per_person`;
    - `beds_per_bedroom`;
-   - divisioni mancanti o impossibili diventano `0.0`, non `NaN`.
-
-9. Le feature geografiche vengono ricostruite dai metadata training:
-   - distanza dal city center;
+   - `accommodates_squared`.
+9. Vengono ricalcolate le feature geografiche:
+   - distanza dal centro citta';
    - distanza dal POI piu' vicino;
-   - densita' pesata dei POI;
-   - cluster geografico piu' vicino tra i centri salvati;
-   - distanza dal cluster geografico.
-
-10. Le feature review vengono gestite cosi':
-    - se `has_reviews=false`, i campi review principali vengono neutralizzati;
-    - se `has_reviews=true`, `review_frequency_days` viene usato per stimare `reviews_per_month` e `avg_days_between_reviews`;
-    - feature NLP/topic che il frontend non puo' ricostruire restano ai default/mediane training.
-
-11. Per ogni mese il backend ricostruisce una nuova row:
-    - mesi sempre `Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec`;
-    - encoding con mesi `1..12`;
-    - `month_sin = sin(2*pi*month/12)`;
-    - `month_cos = cos(2*pi*month/12)`.
-
-12. `services/occupancy_service.py` crea:
+   - `poi_density`;
+   - `geo_cluster` con `KMeans.predict([[latitude, longitude]])`;
+   - `distance_from_geo_cluster`;
+   - inverse distances.
+10. Le feature NLP/topic/review che la UI non puo' ricostruire restano a `0.0`.
+11. Il backend crea:
 
 ```python
 pandas.DataFrame([feature_row], columns=preprocessor.feature_names_in_)
 ```
 
-Poi esegue:
+12. Esegue:
 
 ```python
 transformed = preprocessor.transform(dataframe)
 prediction = model.predict(transformed)
 ```
 
-13. L'output del modello viene validato:
-    - se non e' numerico, errore esplicito;
-    - se e' `NaN` o infinito, errore esplicito;
-    - se e' tra `0` e `1`, viene interpretato come occupancy rate e convertito in giorni del mese;
-    - altrimenti viene interpretato come giorni;
-    - il valore finale viene arrotondato e clampato tra `0` e `days_in_month`.
+`price_model_logxgb.joblib` e' un `TransformedTargetRegressor`, quindi restituisce gia' il prezzo nella scala originale.
 
-14. `annual_days` e' la somma dei 12 valori mensili finali.
+Risposta:
 
-15. La risposta torna al frontend:
+```json
+{
+  "model": { "id": "logxgb", "name": "XGBoost Log", "accuracy": 75, "relativeError": 25 },
+  "prediction": 174,
+  "lower": 130,
+  "upper": 218,
+  "relativeError": 25,
+  "accuracy": 75,
+  "currency": "EUR",
+  "unit": "night"
+}
+```
+
+## Occupancy
+
+Endpoint:
+
+- `GET /models/occupancy`
+- `GET /settings/options`
+- `POST /predict-occupancy`
+
+Flusso:
+
+1. `routers/occupancy.py` riceve `OccupancyPredictionRequest`.
+2. `services/occupancy_service.py` controlla `model_id`. Il modello reale e' `xgboost`.
+3. Gli artifact caricati con cache sono:
+   - `occ_model_preprocessor.joblib`;
+   - `occ_model_xgboost.joblib`;
+   - `occ_feature_metadata.json`;
+   - KMeans geografico per citta'.
+4. `GET /settings/options` espone citta', quartieri, property type, room type e amenities; le amenities sono l'unione tra top occupancy e classi amenities del preprocessor price.
+5. `OccupancyFeaturePipeline` parte da `raw_defaults` in `occ_feature_metadata.json`, cosi' le feature NLP/topic non ricostruibili restano coerenti con il training.
+6. La property UI sovrascrive solo le feature affidabili:
+   - citta', property type, room type;
+   - amenities top 20 piu' `Other`;
+   - ospiti, bagni, camere, letti;
+   - `nightly_price -> price`;
+   - `minimum_nights`;
+   - `review_span_days`.
+7. Le feature ratio e geografiche vengono ricostruite come nel notebook.
+8. `geo_cluster` viene calcolato con KMeans per citta' e salvato come label occupancy `city_cluster`, ad esempio `roma_3`.
+9. Per ogni mese viene creata una riga diversa con:
+
+```text
+month_sin = sin(2*pi*month/12)
+month_cos = cos(2*pi*month/12)
+```
+
+10. Ogni riga passa nel preprocessor e poi nel modello XGBoost occupancy.
+11. Se il modello restituisce un valore in `[0, 1]`, viene interpretato come occupancy rate mensile e convertito in giorni; altrimenti viene interpretato come giorni diretti.
+12. I giorni vengono arrotondati e clampati alla durata del mese.
+
+Risposta:
 
 ```json
 {
   "model": { "id": "xgboost", "name": "XGBoost", "accuracy": 82, "relativeError": 3 },
-  "monthly": { "Jan": 18, "Feb": 16, "Mar": 20 },
-  "annual_days": 249
+  "monthly": { "Jan": 3, "Feb": 2, "Mar": 2 },
+  "annual_days": 57
 }
 ```
 
-Il backend non calcola `annual_revenue`. Lo calcola il frontend con:
+Il backend non calcola `annual_revenue`: il frontend fa `price_prediction * annual_days`.
+
+## KMeans geografici
+
+Il loader cerca prima:
 
 ```text
-annual_revenue = price_prediction * annual_days
+web-app/artifacts/geo_cluster_kmeans_{city_id}.joblib
 ```
 
-## Log di debug
+Sono predisposti file per tutte le citta' in `occ_feature_metadata.json`:
 
-Quando parte `POST /predict-occupancy`, il backend logga:
+```text
+bergamo, bologna, firenze, milano, napoli, puglia, roma, sicilia, trentino, venezia
+```
 
-- JSON property ricevuto dal frontend;
-- colonne del DataFrame passate al preprocessor;
-- feature row campione per gennaio con i campi piu' importanti;
-- output grezzo del modello mese per mese;
-- conversione in giorni prima di round/clamp;
-- giorni finali dopo round/clamp;
-- JSON finale di risposta.
+Per ora questi file sono placeholder copiati dal KMeans legacy. Quando verranno esportati i KMeans corretti per citta', basta sostituire i singoli file mantenendo lo stesso nome.
 
-Nel browser il frontend logga:
+## Log
 
-- dati Settings salvati in `localStorage`;
-- payload JSON inviato a `POST /predict-occupancy`;
-- risposta JSON ricevuta dal backend;
-- risposte di `GET /models/occupancy` e `GET /settings/options`.
+Il backend logga:
 
-## Dove cercare se le predizioni sembrano sbagliate
+- payload property ricevuto;
+- colonne DataFrame passate al preprocessor;
+- feature row raw sintetica;
+- output modello;
+- risposta finale.
 
-- Se city, property type o room type sono errati, controlla `occupancy_features.py` nei blocchi categoria.
-- Se le amenities sembrano perse, controlla la lista `top_amenities` in `occ_feature_metadata.json`.
-- Se la predizione cambia troppo con lat/lon, controlla distanza da centro, POI e geo cluster nei log.
-- Se tutti i mesi sono simili, controlla `month_sin` e `month_cos` nella feature row.
-- Se il modello restituisce valori strani, controlla `raw_model_output` nei log mensili.
+Il frontend logga:
 
-`occ_model_payload.json` resta solo un artifact legacy/debug. Non viene usato come template raw per la pipeline corrente, perche' non rappresenta correttamente i dati user-facing che arrivano dal frontend.
+- request e response di `POST /predict-price`;
+- request e response di `POST /predict-occupancy`;
+- response di `GET /models/price`, `GET /models/occupancy`, `GET /settings/options`;
+- dati Settings salvati in localStorage.
+
+## Note sugli artifact JSON
+
+`price_model_payload.json` e `occ_model_payload.json` sono esempi/debug esportati dal notebook dopo trasformazioni intermedie. Non rappresentano il payload che arriva dal frontend e non sono usati come template principale di inferenza.

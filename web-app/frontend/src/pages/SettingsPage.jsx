@@ -44,8 +44,7 @@ import {
   updatePropertyFields,
   updateReview,
 } from "../features/property/propertySlice.js";
-import { generateMockPredictions } from "../services/mockPredictionService.js";
-import { fetchSettingsOptions, occupancyPredictionFromApi, predictOccupancy } from "../services/apiService.js";
+import { fetchSettingsOptions, occupancyPredictionFromApi, predictOccupancy, predictPrice, pricePredictionFromApi } from "../services/apiService.js";
 import {
   clearPropertyDraft,
   loadSavedPropertySettings,
@@ -391,7 +390,8 @@ export default function SettingsPage() {
     setSimulationError("");
 
     try {
-      const pricePrediction = generateMockPredictions(property).price;
+      const priceApiPrediction = await predictPrice("logxgb", property);
+      const pricePrediction = pricePredictionFromApi(priceApiPrediction);
       const occupancyApiPrediction = await predictOccupancy("xgboost", property);
       const occupancyPrediction = occupancyPredictionFromApi(occupancyApiPrediction, pricePrediction);
       const predictions = {
@@ -406,7 +406,7 @@ export default function SettingsPage() {
       setSavedProperty(property);
       navigate("/dashboard");
     } catch (error) {
-      setSimulationError(error instanceof Error ? error.message : "Unable to run occupancy prediction.");
+      setSimulationError(error instanceof Error ? error.message : "Unable to run model prediction.");
     } finally {
       setSimulationLoading(false);
     }
@@ -658,20 +658,20 @@ export default function SettingsPage() {
                 <div className="grid gap-6">
                   <div className="max-w-[560px]">
                     <Field
-                      label="Review frequency"
-                      changed={isChanged("review_frequency_days")}
-                      savedValue={savedProperty.review_frequency_days}
+                      label="Review span"
+                      changed={isChanged("review_span_days")}
+                      savedValue={savedProperty.review_span_days}
                     >
                       <div className="flex min-h-[56px] overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary-fixed">
                         <input
                           className={`min-w-0 flex-1 px-4 text-body-md text-on-surface outline-none ${modifiedClasses(
-                            isChanged("review_frequency_days"),
+                            isChanged("review_span_days"),
                           )}`}
                           type="number"
                           min="1"
                           step="1"
-                          value={property.review_frequency_days}
-                          onChange={(event) => setField("review_frequency_days", positiveIntegerValue(event.target.value))}
+                          value={property.review_span_days}
+                          onChange={(event) => setField("review_span_days", positiveIntegerValue(event.target.value))}
                         />
                         <span className="flex items-center border-l border-outline-variant bg-surface-container px-4 text-label-md text-on-surface-variant">
                           days

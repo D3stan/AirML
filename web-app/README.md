@@ -2,14 +2,13 @@
 
 Questa cartella contiene la web app locale di AirML:
 
-- `backend/`: API mock FastAPI.
+- `backend/`: API FastAPI con modelli reali esportati dal notebook.
 - `frontend/`: SPA React + Vite + Tailwind.
+- `artifacts/`: preprocessori, modelli XGBoost e KMeans geografici.
 
 Per usare l'app in locale devi avviare backend e frontend in due terminali separati.
 
 ## Prerequisiti
-
-Installa prima questi strumenti:
 
 - Python 3.10 o superiore
 - Node.js 20 o superiore
@@ -23,51 +22,17 @@ node --version
 npm --version
 ```
 
-## 1. Clona il repository
+## 1. Avvia il backend FastAPI
 
-```bash
-git clone <URL_DEL_REPOSITORY>
-cd AirML
-```
-
-Se il percorso contiene spazi, usa sempre le virgolette quando fai `cd`.
-
-Esempio:
-
-```bash
-cd "/d/Universita/Terzo Anno/data_intensive/AirML"
-```
-
-## 2. Avvia il backend FastAPI
-
-Apri un primo terminale dalla root del progetto.
-
-Vai nella cartella backend:
+Apri un terminale dalla root del progetto:
 
 ```bash
 cd web-app/backend
-```
-
-Installa le dipendenze minime del backend:
-
-```bash
 python -m pip install fastapi uvicorn pydantic pandas scikit-learn xgboost joblib httpx pytest
-```
-
-Avvia il backend:
-
-```bash
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Se tutto va bene vedrai un output simile:
-
-```text
-Uvicorn running on http://127.0.0.1:8000
-Application startup complete.
-```
-
-URL utili del backend:
+URL utili:
 
 ```text
 Swagger / API docs:
@@ -77,42 +42,27 @@ Health check:
 http://127.0.0.1:8000/health
 ```
 
-Puoi testare il backend anche da terminale:
+Endpoint principali:
 
-```bash
-curl -s http://127.0.0.1:8000/health
+```text
+GET  /models/price
+POST /predict-price
+GET  /models/occupancy
+POST /predict-occupancy
+GET  /settings/options
 ```
 
-## 3. Avvia il frontend React/Vite
+## 2. Avvia il frontend React/Vite
 
-Apri un secondo terminale dalla root del progetto.
-
-Vai nella cartella frontend:
+Apri un secondo terminale dalla root del progetto:
 
 ```bash
 cd web-app/frontend
-```
-
-Installa le dipendenze Node:
-
-```bash
 npm install
-```
-
-Avvia Vite:
-
-```bash
 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Se tutto va bene vedrai:
-
-```text
-VITE ready
-Local: http://127.0.0.1:5173/
-```
-
-Apri la SPA da questo URL:
+Apri:
 
 ```text
 http://127.0.0.1:5173/dashboard
@@ -125,42 +75,97 @@ Rotte principali:
 /settings
 ```
 
-Nota importante: non aprire `http://127.0.0.1:8000` per vedere la SPA. La porta `8000` e' il backend. La SPA React gira sulla porta `5173`.
+La porta `8000` e' solo backend. La SPA gira sulla porta `5173`.
 
-## 4. Comandi completi in due terminali
+## 3. Flusso dati prima dell'inferenza
 
-Terminale 1, backend:
+La pagina Settings salva una property user-facing:
 
-```bash
-cd web-app/backend
-python -m pip install fastapi uvicorn pydantic pandas scikit-learn xgboost joblib httpx pytest
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```json
+{
+  "city": "Rome",
+  "neighbourhood_cleansed": "Trastevere",
+  "latitude": 41.9028,
+  "longitude": 12.4964,
+  "property_type": "Entire rental unit",
+  "room_type": "Entire home/apt",
+  "amenities": ["Wifi", "Kitchen", "Air conditioning"],
+  "accommodates": 4,
+  "bathrooms": 1,
+  "bedrooms": 2,
+  "beds": 2,
+  "nightly_price": 120,
+  "minimum_nights": 2,
+  "availability_365": 365,
+  "instant_bookable": true,
+  "has_reviews": true,
+  "review_span_days": 1500
+}
 ```
 
-Terminale 2, frontend:
+Quando premi Run Simulation:
 
-```bash
-cd web-app/frontend
-npm install
-npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
-```
-
-Poi apri:
+1. Il frontend chiama `POST /predict-price` con `{ model_id: "logxgb", property }`.
+2. Il backend valida con Pydantic.
+3. La pipeline price ricostruisce le 66 feature raw del notebook:
+   - `city`, `property_type`, `room_type`, `instant_bookable`;
+   - `neighbourhood = city_neighbourhood`;
+   - amenities top e macro-categorie;
+   - availability 30/60/90 derivate da `availability_365`;
+   - ratio strutturali e `accommodates_squared`;
+   - distanze da centro e POI;
+   - `geo_cluster` con KMeans;
+   - inverse distances;
+   - feature NLP/topic non ricostruibili a `0`.
+4. La riga passa in `price_model_preprocessor.joblib`.
+5. Il modello `price_model_logxgb.joblib` restituisce il prezzo a notte.
+6. Il frontend chiama `POST /predict-occupancy` con la stessa property.
+7. La pipeline occupancy parte dai default in `occ_feature_metadata.json`, sovrascrive i campi disponibili e crea una riga per ciascun mese.
+8. Ogni riga passa in `occ_model_preprocessor.joblib` e poi in `occ_model_xgboost.joblib`.
+9. Il frontend calcola:
 
 ```text
-http://127.0.0.1:5173/dashboard
+annual_revenue = price_prediction * annual_days
 ```
 
-## 5. Build di produzione del frontend
+`GET /settings/options` invia al frontend le opzioni compatibili con i modelli. Le amenities sono l'unione tra quelle principali di occupancy e quelle conosciute dal preprocessor price.
 
-Per verificare che il frontend compili correttamente:
+## 4. Nome corretto review
+
+Il campo corretto e':
+
+```text
+review_span_days
+```
+
+Rappresenta da quanti giorni l'host/listing ha uno storico attivo. Il vecchio nome `review_frequency_days` viene migrato automaticamente dal localStorage, ma non deve piu' essere usato nei nuovi payload.
+
+## 5. KMeans geografici
+
+Il backend cerca KMeans separati per citta':
+
+```text
+web-app/artifacts/geo_cluster_kmeans_{city_id}.joblib
+```
+
+Sono presenti placeholder per:
+
+```text
+bergamo, bologna, firenze, milano, napoli, puglia, roma, sicilia, trentino, venezia
+```
+
+Per ora sono copie dell'artifact legacy. Quando vengono riesportati i KMeans corretti dal notebook, sostituisci i file mantenendo lo stesso nome.
+
+## 6. Build frontend
+
+Per verificare che il frontend compili:
 
 ```bash
 cd web-app/frontend
 npm run build
 ```
 
-Per vedere localmente la build prodotta:
+Per vedere la build prodotta:
 
 ```bash
 npm run preview -- --host 127.0.0.1 --port 4173
@@ -172,7 +177,7 @@ Apri:
 http://127.0.0.1:4173
 ```
 
-## 6. Test backend
+## 7. Test backend
 
 Se sono presenti test backend:
 
@@ -181,27 +186,18 @@ cd web-app/backend
 python -m pytest tests -p no:cacheprovider
 ```
 
-## 6.1 Rigenera metadata occupancy
-
-Se modifichi il preprocessing occupancy nel notebook o riaddestri gli artifact, rigenera anche il bundle metadata usato da backend e frontend:
-
-```bash
-python scripts/export_occupancy_metadata.py
-```
-
-Questo aggiorna:
+Smoke manuale utile da Swagger:
 
 ```text
-web-app/artifacts/occ_feature_metadata.json
+POST http://127.0.0.1:8000/predict-price
+POST http://127.0.0.1:8000/predict-occupancy
 ```
 
-Il backend usa questo file per ricostruire le feature raw, le opzioni dei dropdown e i geo cluster coerenti col training.
-
-## 7. Problemi comuni
+## 8. Problemi comuni
 
 ### La SPA si vede senza CSS
 
-Assicurati di aprire il frontend da Vite:
+Apri il frontend da Vite:
 
 ```text
 http://127.0.0.1:5173/dashboard
@@ -209,22 +205,7 @@ http://127.0.0.1:5173/dashboard
 
 Non usare la porta `8000` per la SPA.
 
-Se il problema continua, ferma eventuali server Vite vecchi e pulisci la cache:
-
-```bash
-taskkill //F //IM node.exe
-cd web-app/frontend
-rm -rf node_modules/.vite
-npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
-```
-
-Poi fai hard refresh nel browser:
-
-```text
-Ctrl + F5
-```
-
-### La porta 5173 e' gia occupata
+### La porta 5173 e' gia' occupata
 
 Chiudi il vecchio dev server con `Ctrl + C`.
 
@@ -241,56 +222,6 @@ cd web-app/frontend
 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-### Il backend non parte con `app.main`
+### Warning sklearn sugli artifact
 
-Il comando previsto e':
-
-```bash
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Questo richiede che esista il file:
-
-```text
-web-app/backend/app/main.py
-```
-
-Se manca, il backend non puo partire con quel comando.
-
-### `curl` non funziona su Windows
-
-Puoi aprire direttamente nel browser:
-
-```text
-http://127.0.0.1:8000/health
-```
-
-Oppure usare PowerShell:
-
-```powershell
-Invoke-WebRequest http://127.0.0.1:8000/health
-```
-
-## 8. Riassunto veloce
-
-Backend:
-
-```bash
-cd web-app/backend
-python -m pip install fastapi uvicorn pydantic pandas scikit-learn xgboost joblib httpx pytest
-python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Frontend:
-
-```bash
-cd web-app/frontend
-npm install
-npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
-```
-
-Apri:
-
-```text
-http://127.0.0.1:5173/dashboard
-```
+Se vedi warning tipo artifact salvato con sklearn `1.8.0` e caricato con `1.9.0`, l'inferenza puo' comunque funzionare. Per eliminarli, usa la stessa versione sklearn usata durante l'export dal notebook.

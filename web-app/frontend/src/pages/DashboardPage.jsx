@@ -5,9 +5,16 @@ import ModelSelectDropdown from "../components/ModelSelectDropdown.jsx";
 import OccupancyChart from "../components/OccupancyChart.jsx";
 import PricePredictionCard from "../components/PricePredictionCard.jsx";
 import PropertyMapCard from "../components/PropertyMapCard.jsx";
-import { occupancyModelFallback } from "../data/mockData.js";
+import { occupancyModelFallback, priceModelFallback } from "../data/mockData.js";
 import { setPredictionModel, setPredictions } from "../features/predictions/predictionsSlice.js";
-import { fetchOccupancyModels, occupancyPredictionFromApi, predictOccupancy } from "../services/apiService.js";
+import {
+  fetchOccupancyModels,
+  fetchPriceModels,
+  occupancyPredictionFromApi,
+  predictOccupancy,
+  predictPrice,
+  pricePredictionFromApi,
+} from "../services/apiService.js";
 import { saveMockPredictions } from "../utils/storage.js";
 
 function SummaryRow({ label, value }) {
@@ -23,6 +30,9 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const property = useSelector((state) => state.property);
   const predictions = useSelector((state) => state.predictions);
+  const [priceModels, setPriceModels] = useState([priceModelFallback]);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceError, setPriceError] = useState("");
   const [occupancyModels, setOccupancyModels] = useState([occupancyModelFallback]);
   const [occupancyLoading, setOccupancyLoading] = useState(false);
   const [occupancyError, setOccupancyError] = useState("");
@@ -42,21 +52,46 @@ export default function DashboardPage() {
         }
       });
 
+    fetchPriceModels()
+      .then((models) => {
+        if (active && Array.isArray(models) && models.length > 0) {
+          setPriceModels(models);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setPriceError(error instanceof Error ? error.message : "Unable to load price models.");
+        }
+      });
+
     return () => {
       active = false;
     };
   }, []);
 
-  const updatePriceModel = (model) => {
-    const nextPredictions = {
-      ...predictions,
-      price: {
-        ...predictions.price,
-        model,
-      },
-    };
-    dispatch(setPredictionModel({ target: "price", model }));
-    saveMockPredictions(nextPredictions);
+  const updatePriceModel = async (modelId) => {
+    setPriceLoading(true);
+    setPriceError("");
+
+    try {
+      const apiPrediction = await predictPrice(modelId, property);
+      const pricePrediction = pricePredictionFromApi(apiPrediction);
+      const nextPredictions = {
+        ...predictions,
+        price: pricePrediction,
+        occupancy: {
+          ...predictions.occupancy,
+          annual_revenue: Math.round(Number(pricePrediction.prediction || 0) * Number(predictions.occupancy.annual_days || 0)),
+        },
+      };
+      dispatch(setPredictionModel({ target: "price", model: pricePrediction.model }));
+      dispatch(setPredictions(nextPredictions));
+      saveMockPredictions(nextPredictions);
+    } catch (error) {
+      setPriceError(error instanceof Error ? error.message : "Unable to update price prediction.");
+    } finally {
+      setPriceLoading(false);
+    }
   };
 
   const updateOccupancyModel = async (modelId) => {
@@ -106,7 +141,15 @@ export default function DashboardPage() {
             prediction={predictions.price}
             occupancy={predictions.occupancy}
             onModelChange={updatePriceModel}
+            options={priceModels}
+            loading={priceLoading}
+            disabled={priceModels.length === 0}
           />
+          {priceError && (
+            <div className="rounded-xl border border-error/30 bg-primary-fixed px-4 py-3 text-label-md text-on-primary-fixed">
+              {priceError}
+            </div>
+          )}
           <article className="flex min-h-[560px] min-w-0 flex-[1.48] flex-col overflow-visible rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8 lg:min-h-0">
             <div className="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row">
               <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Occupancy Prediction</h2>
