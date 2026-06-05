@@ -46,6 +46,7 @@ import {
   updateReview,
 } from "../features/property/propertySlice.js";
 import { generateMockPredictions } from "../services/mockPredictionService.js";
+import { occupancyPredictionFromApi, predictOccupancy } from "../services/apiService.js";
 import {
   clearPropertyDraft,
   loadSavedPropertySettings,
@@ -161,6 +162,8 @@ export default function SettingsPage() {
   const [newReviewText, setNewReviewText] = useState("");
   const [editingReviewId, setEditingReviewId] = useState(null);
   const [editingReviewText, setEditingReviewText] = useState("");
+  const [simulationLoading, setSimulationLoading] = useState(false);
+  const [simulationError, setSimulationError] = useState("");
 
   const availableNeighbourhoods = useMemo(() => {
     return cityProfiles[property.city]?.neighbourhoods ?? cityProfiles.Florence.neighbourhoods;
@@ -285,14 +288,30 @@ export default function SettingsPage() {
     setSavedProperty(defaultPropertySettings);
   };
 
-  const handleRunSimulation = () => {
-    const predictions = generateMockPredictions(property);
-    dispatch(setPredictions(predictions));
-    savePropertySettings(property);
-    saveMockPredictions(predictions);
-    clearPropertyDraft();
-    setSavedProperty(property);
-    navigate("/dashboard");
+  const handleRunSimulation = async () => {
+    setSimulationLoading(true);
+    setSimulationError("");
+
+    try {
+      const pricePrediction = generateMockPredictions(property).price;
+      const occupancyApiPrediction = await predictOccupancy("xgboost", property);
+      const occupancyPrediction = occupancyPredictionFromApi(occupancyApiPrediction, pricePrediction);
+      const predictions = {
+        price: pricePrediction,
+        occupancy: occupancyPrediction,
+      };
+
+      dispatch(setPredictions(predictions));
+      savePropertySettings(property);
+      saveMockPredictions(predictions);
+      clearPropertyDraft();
+      setSavedProperty(property);
+      navigate("/dashboard");
+    } catch (error) {
+      setSimulationError(error instanceof Error ? error.message : "Unable to run occupancy prediction.");
+    } finally {
+      setSimulationLoading(false);
+    }
   };
 
   return (
@@ -304,6 +323,11 @@ export default function SettingsPage() {
           <p className="mt-2 max-w-2xl text-body-md text-on-surface-variant">
             Enter the property information used by the price and occupancy prediction models.
           </p>
+          {simulationError && (
+            <div className="mt-5 rounded-xl border border-error/30 bg-primary-fixed px-4 py-3 text-label-md text-on-primary-fixed">
+              {simulationError}
+            </div>
+          )}
         </header>
 
         <div className="grid gap-6">
@@ -647,7 +671,12 @@ export default function SettingsPage() {
             </div>
           </SettingsSection>
 
-          <BottomActionBar onReset={handleReset} onSave={saveCurrentSettings} onRunSimulation={handleRunSimulation} />
+          <BottomActionBar
+            onReset={handleReset}
+            onSave={saveCurrentSettings}
+            onRunSimulation={handleRunSimulation}
+            simulationLoading={simulationLoading}
+          />
         </div>
       </main>
       {amenityManagerOpen && (

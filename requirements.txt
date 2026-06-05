@@ -8,6 +8,10 @@ wheel
 requests
 nbstripout
 vaderSentiment
+fastapi
+uvicorn
+pydantic
+httpx
 xgboost
 catboost
 # imbalanced-learn
@@ -15,7 +19,7 @@ catboost
 # langdetect
 # nltk
 # spacy
-# joblib
+joblib
 scipy
 # tqdm
 # jupyter

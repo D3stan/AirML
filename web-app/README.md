@@ -51,7 +51,7 @@ cd web-app/backend
 Installa le dipendenze minime del backend:
 
 ```bash
-python -m pip install fastapi uvicorn pytest
+python -m pip install fastapi uvicorn pydantic pandas scikit-learn xgboost joblib httpx pytest
 ```
 
 Avvia il backend:
@@ -133,7 +133,7 @@ Terminale 1, backend:
 
 ```bash
 cd web-app/backend
-python -m pip install fastapi uvicorn pytest
+python -m pip install fastapi uvicorn pydantic pandas scikit-learn xgboost joblib httpx pytest
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -261,7 +261,7 @@ Backend:
 
 ```bash
 cd web-app/backend
-python -m pip install fastapi uvicorn pytest
+python -m pip install fastapi uvicorn pydantic pandas scikit-learn xgboost joblib httpx pytest
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 

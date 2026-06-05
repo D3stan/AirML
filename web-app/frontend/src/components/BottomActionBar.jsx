@@ -1,6 +1,6 @@
 import { Play, RotateCcw, Save } from "lucide-react";
 
-export default function BottomActionBar({ onReset, onSave, onRunSimulation }) {
+export default function BottomActionBar({ onReset, onSave, onRunSimulation, simulationLoading = false }) {
   return (
     <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-[920px] -translate-x-1/2 rounded-2xl border border-outline-variant/45 bg-surface-container-lowest/95 p-4 shadow-ambient backdrop-blur">
       <div className="flex w-full flex-col justify-center gap-3 sm:flex-row">
@@ -23,10 +23,11 @@ export default function BottomActionBar({ onReset, onSave, onRunSimulation }) {
         <button
           type="button"
           onClick={onRunSimulation}
-          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3 text-label-md text-on-primary shadow-ambient transition hover:bg-tertiary"
+          disabled={simulationLoading}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3 text-label-md text-on-primary shadow-ambient transition hover:bg-tertiary disabled:cursor-not-allowed disabled:bg-outline-variant disabled:text-on-surface-variant"
         >
           <Play size={18} />
-          Run Simulation
+          {simulationLoading ? "Running..." : "Run Simulation"}
         </button>
       </div>
     </div>

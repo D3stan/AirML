@@ -21,8 +21,8 @@ class MLBTransformer(BaseEstimator, TransformerMixin):
         return np.array([c for c in self.mlb.classes_])
 
 # 2. Caricamento in memoria (da fare all'avvio dell'app per non rallentare le richieste)
-preprocessor = joblib.load('./web-app/artifacts/preprocessor_occ.joblib')
-modello = joblib.load('./web-app/artifacts/xgboost_model_occ.joblib')
+preprocessor = joblib.load('./web-app/artifacts/occ_model_preprocessor.joblib')
+modello = joblib.load('./web-app/artifacts/occ_model_xgboost.joblib')
 
 # 3. La tua funzione finale
 def trasforma_e_predici(dati_raw: dict) -> float:

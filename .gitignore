@@ -1,4 +1,6 @@
 data/
+!web-app/frontend/src/data/
+!web-app/frontend/src/data/mockData.js
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

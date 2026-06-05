@@ -1,6 +1,21 @@
 import { useState } from "react";
 import { monthLabels } from "../data/mockData.js";
 
+const daysByMonth = {
+  Jan: 31,
+  Feb: 28,
+  Mar: 31,
+  Apr: 30,
+  May: 31,
+  Jun: 30,
+  Jul: 31,
+  Aug: 31,
+  Sep: 30,
+  Oct: 31,
+  Nov: 30,
+  Dec: 31,
+};
+
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -13,12 +28,13 @@ export default function OccupancyChart({ monthly, relativeError }) {
   });
   const chartRows = monthLabels.map((month) => {
     const prediction = monthly[month] ?? 0;
-    const errorDays = Math.max(1, Math.round(relativeError));
+    const daysInMonth = daysByMonth[month] ?? 31;
+    const relativeSpread = Number(relativeError || 0) / 100;
     return {
       month,
-      lower: clamp(prediction - errorDays, 0, 31),
-      prediction,
-      upper: clamp(prediction + errorDays, 0, 31),
+      lower: clamp(Math.round(prediction * (1 - relativeSpread)), 0, daysInMonth),
+      prediction: clamp(Math.round(prediction), 0, daysInMonth),
+      upper: clamp(Math.round(prediction * (1 + relativeSpread)), 0, daysInMonth),
     };
   });
 

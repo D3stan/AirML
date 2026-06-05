@@ -113,7 +113,7 @@ export function generateMockPredictions(propertySettings) {
     },
     occupancy: {
       annual_days: annualDays,
-      annual_revenue: Math.round(annualDays * predictedPrice * 0.39),
+      annual_revenue: Math.round(annualDays * predictedPrice),
       model: "Lasso",
       accuracy: clamp(78 + boundedJitter(hash, -4, 4, 37), 66, 88),
       relativeError: clamp(3 + boundedJitter(hash, 0, 5, 41), 3, 10),

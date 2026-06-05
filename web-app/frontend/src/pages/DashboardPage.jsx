@@ -1,10 +1,13 @@
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Header from "../components/Header.jsx";
 import ModelSelectDropdown from "../components/ModelSelectDropdown.jsx";
 import OccupancyChart from "../components/OccupancyChart.jsx";
 import PricePredictionCard from "../components/PricePredictionCard.jsx";
 import PropertyMapCard from "../components/PropertyMapCard.jsx";
-import { setPredictionModel } from "../features/predictions/predictionsSlice.js";
+import { occupancyModelFallback } from "../data/mockData.js";
+import { setPredictionModel, setPredictions } from "../features/predictions/predictionsSlice.js";
+import { fetchOccupancyModels, occupancyPredictionFromApi, predictOccupancy } from "../services/apiService.js";
 import { saveMockPredictions } from "../utils/storage.js";
 
 function SummaryRow({ label, value }) {
@@ -20,17 +23,59 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const property = useSelector((state) => state.property);
   const predictions = useSelector((state) => state.predictions);
+  const [occupancyModels, setOccupancyModels] = useState([occupancyModelFallback]);
+  const [occupancyLoading, setOccupancyLoading] = useState(false);
+  const [occupancyError, setOccupancyError] = useState("");
 
-  const updateModel = (target, model) => {
+  useEffect(() => {
+    let active = true;
+
+    fetchOccupancyModels()
+      .then((models) => {
+        if (active && Array.isArray(models) && models.length > 0) {
+          setOccupancyModels(models);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setOccupancyError(error instanceof Error ? error.message : "Unable to load occupancy models.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const updatePriceModel = (model) => {
     const nextPredictions = {
       ...predictions,
-      [target]: {
-        ...predictions[target],
+      price: {
+        ...predictions.price,
         model,
       },
     };
-    dispatch(setPredictionModel({ target, model }));
+    dispatch(setPredictionModel({ target: "price", model }));
     saveMockPredictions(nextPredictions);
+  };
+
+  const updateOccupancyModel = async (modelId) => {
+    setOccupancyLoading(true);
+    setOccupancyError("");
+
+    try {
+      const apiPrediction = await predictOccupancy(modelId, property);
+      const nextPredictions = {
+        ...predictions,
+        occupancy: occupancyPredictionFromApi(apiPrediction, predictions.price),
+      };
+      dispatch(setPredictions(nextPredictions));
+      saveMockPredictions(nextPredictions);
+    } catch (error) {
+      setOccupancyError(error instanceof Error ? error.message : "Unable to update occupancy prediction.");
+    } finally {
+      setOccupancyLoading(false);
+    }
   };
 
   return (
@@ -60,19 +105,27 @@ export default function DashboardPage() {
           <PricePredictionCard
             prediction={predictions.price}
             occupancy={predictions.occupancy}
-            onModelChange={(model) => updateModel("price", model)}
+            onModelChange={updatePriceModel}
           />
           <article className="flex min-h-[560px] min-w-0 flex-[1.48] flex-col overflow-visible rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8 lg:min-h-0">
             <div className="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row">
               <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Occupancy Prediction</h2>
               <ModelSelectDropdown
-                value={predictions.occupancy.model}
+                value={predictions.occupancy.model_id ?? predictions.occupancy.model}
                 accuracy={predictions.occupancy.accuracy}
                 relativeError={predictions.occupancy.relativeError}
-                onChange={(model) => updateModel("occupancy", model)}
+                onChange={updateOccupancyModel}
                 label="Select occupancy prediction model"
+                options={occupancyModels}
+                disabled={occupancyModels.length === 0}
+                loading={occupancyLoading}
               />
             </div>
+            {occupancyError && (
+              <div className="mb-4 rounded-xl border border-error/30 bg-primary-fixed px-4 py-3 text-label-md text-on-primary-fixed">
+                {occupancyError}
+              </div>
+            )}
             <div className="min-h-0 flex-1">
               <OccupancyChart
                 monthly={predictions.occupancy.monthly}
