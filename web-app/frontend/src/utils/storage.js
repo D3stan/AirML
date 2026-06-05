@@ -12,6 +12,16 @@ function storageFor(storageType = "local") {
   return storageType === "session" ? window.sessionStorage : window.localStorage;
 }
 
+function logSavedSettings(settings) {
+  if (typeof console === "undefined") {
+    return;
+  }
+
+  console.groupCollapsed("[AirML Settings] Dati salvati in localStorage");
+  console.log(JSON.stringify(settings, null, 2));
+  console.groupEnd();
+}
+
 export function loadFromStorage(key, fallback, storageType = "local") {
   if (!canUseStorage(storageType)) {
     return fallback;
@@ -74,6 +84,7 @@ export function loadSavedPropertySettings(fallback) {
 
 export function savePropertySettings(settings) {
   saveToStorage(PROPERTY_STORAGE_KEY, settings);
+  logSavedSettings(settings);
 }
 
 export function loadPropertyDraft(fallback) {

@@ -1,10 +1,18 @@
 from __future__ import annotations
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import CORS_ORIGINS
 from app.routers import health, occupancy, price, sentiment
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
 
 def create_app() -> FastAPI:
