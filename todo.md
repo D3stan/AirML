@@ -17,3 +17,10 @@
 - [ ] Confronto modelli
     - [ ] Confronto metriche
     - [ ] Confronto feature importance
+- [ ] Esportazione modelli e preprocessor
+    - [ ] Preprocesor
+    - [ ] Kmeans
+    - [ ] Modello ridge poly
+    - [ ] Modello xgboost
+    - [ ] Modello catboost
+- [ ] Creazione payload di esempio per API
