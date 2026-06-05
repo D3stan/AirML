@@ -15,7 +15,7 @@ catboost
 # langdetect
 # nltk
 # spacy
-# joblib
+joblib
 scipy
 # tqdm
 # jupyter
