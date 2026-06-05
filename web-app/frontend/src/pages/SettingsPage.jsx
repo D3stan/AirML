@@ -27,7 +27,6 @@ import SettingsSection from "../components/SettingsSection.jsx";
 import ToggleInput from "../components/ToggleInput.jsx";
 import {
   amenityOptions,
-  cityOptions,
   cityProfiles,
   defaultPredictions,
   defaultPropertySettings,
@@ -46,7 +45,7 @@ import {
   updateReview,
 } from "../features/property/propertySlice.js";
 import { generateMockPredictions } from "../services/mockPredictionService.js";
-import { occupancyPredictionFromApi, predictOccupancy } from "../services/apiService.js";
+import { fetchSettingsOptions, occupancyPredictionFromApi, predictOccupancy } from "../services/apiService.js";
 import {
   clearPropertyDraft,
   loadSavedPropertySettings,
@@ -59,12 +58,28 @@ function valuesEqual(a, b) {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
-function orderedAmenityList(amenities) {
+function orderedAmenityList(amenities, availableOptions = amenityOptions) {
   const amenitySet = new Set(amenities ?? []);
   return [
-    ...amenityOptions.filter((amenity) => amenitySet.has(amenity)),
-    ...(amenities ?? []).filter((amenity) => !amenityOptions.includes(amenity)).sort(),
+    ...availableOptions.filter((amenity) => amenitySet.has(amenity)),
+    ...(amenities ?? []).filter((amenity) => !availableOptions.includes(amenity)).sort(),
   ];
+}
+
+function cityProfilesFromOptions(options) {
+  if (!options?.cities?.length) {
+    return cityProfiles;
+  }
+
+  return options.cities.reduce((profiles, city) => {
+    profiles[city.label] = {
+      id: city.id,
+      latitude: city.latitude,
+      longitude: city.longitude,
+      neighbourhoods: options.neighbourhoodsByCity?.[city.id] ?? [],
+    };
+    return profiles;
+  }, {});
 }
 
 function numberValue(value) {
@@ -164,28 +179,111 @@ export default function SettingsPage() {
   const [editingReviewText, setEditingReviewText] = useState("");
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationError, setSimulationError] = useState("");
+  const [settingsOptions, setSettingsOptions] = useState(null);
+  const [settingsOptionsError, setSettingsOptionsError] = useState("");
+
+  const effectiveCityProfiles = useMemo(() => cityProfilesFromOptions(settingsOptions), [settingsOptions]);
+  const effectiveCityOptions = useMemo(() => Object.keys(effectiveCityProfiles), [effectiveCityProfiles]);
+  const effectiveAmenityOptions = settingsOptions?.amenities ?? amenityOptions;
+  const effectivePropertyTypeOptions = settingsOptions?.propertyTypes ?? propertyTypeOptions;
+  const effectiveRoomTypeOptions = settingsOptions?.roomTypes ?? roomTypeOptions;
 
   const availableNeighbourhoods = useMemo(() => {
-    return cityProfiles[property.city]?.neighbourhoods ?? cityProfiles.Florence.neighbourhoods;
-  }, [property.city]);
+    return effectiveCityProfiles[property.city]?.neighbourhoods ?? effectiveCityProfiles.Florence?.neighbourhoods ?? [];
+  }, [effectiveCityProfiles, property.city]);
 
   useEffect(() => {
     savePropertyDraft(property);
   }, [property]);
 
+  useEffect(() => {
+    let active = true;
+
+    fetchSettingsOptions()
+      .then((options) => {
+        if (active) {
+          setSettingsOptions(options);
+          setSettingsOptionsError("");
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setSettingsOptionsError(error instanceof Error ? error.message : "Unable to load model settings options.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!settingsOptions) {
+      return;
+    }
+
+    const nextFields = {};
+    const profile = effectiveCityProfiles[property.city] ?? effectiveCityProfiles.Rome;
+    if (profile && !effectiveCityProfiles[property.city]) {
+      nextFields.city = "Rome";
+      nextFields.neighbourhood_cleansed = profile.neighbourhoods[0];
+      nextFields.latitude = profile.latitude;
+      nextFields.longitude = profile.longitude;
+    } else if (profile && !profile.neighbourhoods.includes(property.neighbourhood_cleansed)) {
+      nextFields.neighbourhood_cleansed = profile.neighbourhoods[0];
+    }
+
+    if (!effectivePropertyTypeOptions.includes(property.property_type)) {
+      nextFields.property_type = effectivePropertyTypeOptions.includes("Other") ? "Other" : effectivePropertyTypeOptions[0];
+    }
+    if (!effectiveRoomTypeOptions.includes(property.room_type)) {
+      nextFields.room_type = effectiveRoomTypeOptions.includes("Entire home/apt") ? "Entire home/apt" : effectiveRoomTypeOptions[0];
+    }
+
+    const allowedAmenities = new Set(effectiveAmenityOptions);
+    const nextAmenities = (property.amenities ?? []).filter((amenity) => allowedAmenities.has(amenity));
+    const nextVisibleAmenities = (property.available_amenities ?? []).filter((amenity) => allowedAmenities.has(amenity));
+    if (!valuesEqual(nextAmenities, property.amenities)) {
+      nextFields.amenities = orderedAmenityList(nextAmenities, effectiveAmenityOptions);
+    }
+    if (!valuesEqual(nextVisibleAmenities, property.available_amenities)) {
+      nextFields.available_amenities = orderedAmenityList(
+        nextVisibleAmenities.length > 0 ? nextVisibleAmenities : effectiveAmenityOptions.slice(0, 14),
+        effectiveAmenityOptions,
+      );
+    }
+
+    if (Object.keys(nextFields).length > 0) {
+      dispatch(updatePropertyFields(nextFields));
+    }
+  }, [
+    dispatch,
+    effectiveAmenityOptions,
+    effectiveCityProfiles,
+    effectivePropertyTypeOptions,
+    effectiveRoomTypeOptions,
+    property.amenities,
+    property.available_amenities,
+    property.city,
+    property.neighbourhood_cleansed,
+    property.property_type,
+    property.room_type,
+    settingsOptions,
+  ]);
+
   const isChanged = (field) => !valuesEqual(property[field], savedProperty[field]);
-  const visibleAmenities = orderedAmenityList(property.available_amenities ?? []);
-  const savedVisibleAmenities = orderedAmenityList(savedProperty.available_amenities ?? []);
-  const selectedAmenities = orderedAmenityList(property.amenities ?? []);
-  const savedSelectedAmenities = orderedAmenityList(savedProperty.amenities ?? []);
+  const visibleAmenities = orderedAmenityList(property.available_amenities ?? [], effectiveAmenityOptions);
+  const savedVisibleAmenities = orderedAmenityList(savedProperty.available_amenities ?? [], effectiveAmenityOptions);
+  const selectedAmenities = orderedAmenityList(property.amenities ?? [], effectiveAmenityOptions);
+  const savedSelectedAmenities = orderedAmenityList(savedProperty.amenities ?? [], effectiveAmenityOptions);
   const reviews = property.reviews ?? [];
   const hasAmenitiesChanged =
     !valuesEqual(visibleAmenities, savedVisibleAmenities) || !valuesEqual(selectedAmenities, savedSelectedAmenities);
   const normalizedAmenitySearch = amenitySearch.trim().toLowerCase();
-  const filteredShownAmenities = orderedAmenityList(draftVisibleAmenities).filter((amenity) =>
+  const filteredShownAmenities = orderedAmenityList(draftVisibleAmenities, effectiveAmenityOptions).filter((amenity) =>
     amenity.toLowerCase().includes(normalizedAmenitySearch),
   );
-  const filteredHiddenAmenities = amenityOptions.filter(
+  const filteredHiddenAmenities = effectiveAmenityOptions.filter(
     (amenity) =>
       !draftVisibleAmenities.includes(amenity) && amenity.toLowerCase().includes(normalizedAmenitySearch),
   );
@@ -262,11 +360,11 @@ export default function SettingsPage() {
   };
 
   const setCity = (city) => {
-    const cityProfile = cityProfiles[city];
+    const cityProfile = effectiveCityProfiles[city];
     dispatch(
       updatePropertyFields({
         city,
-        neighbourhood_cleansed: cityProfile.neighbourhoods[0],
+        neighbourhood_cleansed: cityProfile.neighbourhoods[0] ?? "",
         latitude: cityProfile.latitude,
         longitude: cityProfile.longitude,
       }),
@@ -328,6 +426,11 @@ export default function SettingsPage() {
               {simulationError}
             </div>
           )}
+          {settingsOptionsError && (
+            <div className="mt-5 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-label-md text-on-surface-variant">
+              Using fallback settings options: {settingsOptionsError}
+            </div>
+          )}
         </header>
 
         <div className="grid gap-6">
@@ -336,7 +439,7 @@ export default function SettingsPage() {
               <SelectMenu
                 label="City"
                 value={property.city}
-                options={cityOptions}
+                options={effectiveCityOptions}
                 changed={isChanged("city")}
                 savedValue={savedProperty.city}
                 onChange={setCity}
@@ -384,7 +487,7 @@ export default function SettingsPage() {
               <SelectMenu
                 label="Property type"
                 value={property.property_type}
-                options={propertyTypeOptions}
+                options={effectivePropertyTypeOptions}
                 changed={isChanged("property_type")}
                 savedValue={savedProperty.property_type}
                 onChange={(value) => setField("property_type", value)}
@@ -392,7 +495,7 @@ export default function SettingsPage() {
               <SelectMenu
                 label="Room type"
                 value={property.room_type}
-                options={roomTypeOptions}
+                options={effectiveRoomTypeOptions}
                 changed={isChanged("room_type")}
                 savedValue={savedProperty.room_type}
                 onChange={(value) => setField("room_type", value)}
@@ -463,7 +566,7 @@ export default function SettingsPage() {
               <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                 <div className="grid gap-1">
                   <span className="text-label-md text-on-surface-variant">
-                    Shown amenities {visibleAmenities.length} / {amenityOptions.length}
+                    Shown amenities {visibleAmenities.length} / {effectiveAmenityOptions.length}
                   </span>
                   <span className="text-label-sm text-on-surface-variant">
                     Selected {selectedAmenities.length}
@@ -692,7 +795,7 @@ export default function SettingsPage() {
               <div>
                 <h3 className="font-display text-headline-md text-on-surface">Manage amenities</h3>
                 <p className="mt-1 text-label-sm text-on-surface-variant">
-                  {draftVisibleAmenities.length} shown of {amenityOptions.length}
+                  {draftVisibleAmenities.length} shown of {effectiveAmenityOptions.length}
                 </p>
               </div>
               <button

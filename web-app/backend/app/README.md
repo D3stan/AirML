@@ -39,12 +39,14 @@ the final ML feature vector.
 
 `services/occupancy_features.py` converts Settings into a model feature row:
 
-1. Copy `occ_model_payload.json` as the default training-compatible row.
+1. Load raw defaults and training metadata from `occ_feature_metadata.json`.
 2. Overwrite only features the UI can provide reliably.
 3. Keep training feature names unchanged.
-4. Leave sentiment, topic, and distance fields at template defaults when the UI
-   cannot recompute them.
-5. Add `month_sin` and `month_cos` using the notebook convention:
+4. Recompute ratios, distance-to-center, distance-to-POI, POI density, geo
+   cluster, and distance from geo cluster with the notebook formulas.
+5. Leave sentiment and topic fields at training medians when the UI cannot
+   recompute them.
+6. Add `month_sin` and `month_cos` using the notebook convention:
    `sin(2*pi*month/12)` and `cos(2*pi*month/12)` for months `1..12`.
 
 The preprocessor expects a pandas DataFrame with the original training columns,
@@ -62,3 +64,13 @@ length, and returns:
 
 The backend intentionally does not calculate `annual_revenue`; the frontend owns
 that because it combines occupancy with the separate price prediction.
+
+`occ_model_payload.json` is kept only as a legacy/debug artifact. It was saved
+from already transformed feature names and must not be used as a raw dataframe
+template.
+
+Regenerate `occ_feature_metadata.json` from the repository root with:
+
+```bash
+python scripts/export_occupancy_metadata.py
+```

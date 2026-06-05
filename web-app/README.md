@@ -181,6 +181,22 @@ cd web-app/backend
 python -m pytest tests -p no:cacheprovider
 ```
 
+## 6.1 Rigenera metadata occupancy
+
+Se modifichi il preprocessing occupancy nel notebook o riaddestri gli artifact, rigenera anche il bundle metadata usato da backend e frontend:
+
+```bash
+python scripts/export_occupancy_metadata.py
+```
+
+Questo aggiorna:
+
+```text
+web-app/artifacts/occ_feature_metadata.json
+```
+
+Il backend usa questo file per ricostruire le feature raw, le opzioni dei dropdown e i geo cluster coerenti col training.
+
 ## 7. Problemi comuni
 
 ### La SPA si vede senza CSS

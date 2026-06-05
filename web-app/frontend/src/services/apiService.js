@@ -25,6 +25,11 @@ export async function fetchOccupancyModels() {
   return parseJsonResponse(response);
 }
 
+export async function fetchSettingsOptions() {
+  const response = await fetch(`${API_BASE_URL}/settings/options`);
+  return parseJsonResponse(response);
+}
+
 export async function predictOccupancy(modelId, propertySettings) {
   const response = await fetch(`${API_BASE_URL}/predict-occupancy`, {
     method: "POST",

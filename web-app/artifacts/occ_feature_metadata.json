@@ -1,0 +1,1811 @@
+{
+  "version": 1,
+  "source": "main.ipynb occupancy preprocessing",
+  "feature_names_in": [
+    "city",
+    "property_type",
+    "room_type",
+    "accommodates",
+    "bathrooms",
+    "bedrooms",
+    "beds",
+    "amenities",
+    "price",
+    "minimum_nights",
+    "review_scores_rating",
+    "review_scores_cleanliness",
+    "review_scores_checkin",
+    "review_scores_communication",
+    "review_scores_location",
+    "review_scores_value",
+    "reviews_per_month",
+    "vader_compound_mean",
+    "vader_compound_std",
+    "review_length_mean",
+    "asp_cleanliness_mean",
+    "asp_location_mean",
+    "asp_value_mean",
+    "asp_host_quality_mean",
+    "pct_positive",
+    "pct_negative",
+    "review_span_days",
+    "avg_days_between_reviews",
+    "days_since_last_review",
+    "topic_0",
+    "topic_1",
+    "topic_2",
+    "topic_3",
+    "topic_4",
+    "has_reviews",
+    "n_amenities",
+    "beds_per_person",
+    "bedrooms_per_person",
+    "bathrooms_per_person",
+    "beds_per_bedroom",
+    "distance_from_city_center",
+    "distance_from_poi",
+    "poi_density",
+    "month_sin",
+    "month_cos",
+    "geo_cluster",
+    "distance_from_geo_cluster"
+  ],
+  "raw_defaults": {
+    "city": "sicilia",
+    "property_type": "Entire rental unit",
+    "room_type": "Entire home/apt",
+    "accommodates": 4.0,
+    "bathrooms": 1.0,
+    "bedrooms": 1.0,
+    "beds": 2.0,
+    "amenities": [
+      "Other"
+    ],
+    "price": 108.0,
+    "minimum_nights": 2.0,
+    "review_scores_rating": 4.86,
+    "review_scores_cleanliness": 4.9,
+    "review_scores_checkin": 4.93,
+    "review_scores_communication": 4.95,
+    "review_scores_location": 4.85,
+    "review_scores_value": 4.77,
+    "reviews_per_month": 0.71,
+    "vader_compound_mean": 0.4172666666666667,
+    "vader_compound_std": 0.4378918806408788,
+    "review_length_mean": 245.0759493670886,
+    "asp_cleanliness_mean": 0.0909090909090909,
+    "asp_location_mean": 0.3529411764705882,
+    "asp_value_mean": 0.0,
+    "asp_host_quality_mean": 0.3653846153846153,
+    "pct_positive": 0.6428571428571429,
+    "pct_negative": 0.0476190476190476,
+    "review_span_days": 451.0,
+    "avg_days_between_reviews": 17.527131782809867,
+    "days_since_last_review": 26.0,
+    "topic_0": 0.010338578654292,
+    "topic_1": 0.0058089360047154,
+    "topic_2": 0.0003817523928175,
+    "topic_3": 0.0050362430275323,
+    "topic_4": 0.0012541927264302,
+    "has_reviews": 1.0,
+    "n_amenities": 34.0,
+    "beds_per_person": 0.5,
+    "bedrooms_per_person": 0.4,
+    "bathrooms_per_person": 0.3333333333333333,
+    "beds_per_bedroom": 1.5,
+    "distance_from_city_center": 3549.2824624231653,
+    "distance_from_poi": 3398.757682333558,
+    "poi_density": 0.5,
+    "month_sin": -2.4492935982947064e-16,
+    "month_cos": 6.123233995736766e-17,
+    "geo_cluster": "sicilia_1",
+    "distance_from_geo_cluster": 0.017840148550786666
+  },
+  "categories": {
+    "city": [
+      "bergamo",
+      "bologna",
+      "firenze",
+      "milano",
+      "napoli",
+      "puglia",
+      "roma",
+      "sicilia",
+      "trentino",
+      "venezia"
+    ],
+    "property_type": [
+      "Entire condo",
+      "Entire home",
+      "Entire loft",
+      "Entire rental unit",
+      "Entire serviced apartment",
+      "Entire townhouse",
+      "Entire vacation home",
+      "Entire villa",
+      "Other",
+      "Private room in bed and breakfast",
+      "Private room in condo",
+      "Private room in home",
+      "Private room in rental unit",
+      "Room in hotel",
+      "Tiny home",
+      "Trullo"
+    ],
+    "room_type": [
+      "Entire home/apt",
+      "Hotel room",
+      "Private room",
+      "Shared room"
+    ],
+    "geo_cluster": [
+      "bergamo_0",
+      "bergamo_1",
+      "bergamo_10",
+      "bergamo_11",
+      "bergamo_12",
+      "bergamo_13",
+      "bergamo_14",
+      "bergamo_2",
+      "bergamo_3",
+      "bergamo_4",
+      "bergamo_5",
+      "bergamo_6",
+      "bergamo_7",
+      "bergamo_8",
+      "bergamo_9",
+      "bologna_0",
+      "bologna_1",
+      "bologna_10",
+      "bologna_11",
+      "bologna_12",
+      "bologna_13",
+      "bologna_14",
+      "bologna_2",
+      "bologna_3",
+      "bologna_4",
+      "bologna_5",
+      "bologna_6",
+      "bologna_7",
+      "bologna_8",
+      "bologna_9",
+      "firenze_0",
+      "firenze_1",
+      "firenze_10",
+      "firenze_11",
+      "firenze_12",
+      "firenze_13",
+      "firenze_14",
+      "firenze_2",
+      "firenze_3",
+      "firenze_4",
+      "firenze_5",
+      "firenze_6",
+      "firenze_7",
+      "firenze_8",
+      "firenze_9",
+      "milano_0",
+      "milano_1",
+      "milano_10",
+      "milano_11",
+      "milano_12",
+      "milano_13",
+      "milano_14",
+      "milano_2",
+      "milano_3",
+      "milano_4",
+      "milano_5",
+      "milano_6",
+      "milano_7",
+      "milano_8",
+      "milano_9",
+      "napoli_0",
+      "napoli_1",
+      "napoli_10",
+      "napoli_11",
+      "napoli_12",
+      "napoli_13",
+      "napoli_14",
+      "napoli_2",
+      "napoli_3",
+      "napoli_4",
+      "napoli_5",
+      "napoli_6",
+      "napoli_7",
+      "napoli_8",
+      "napoli_9",
+      "puglia_0",
+      "puglia_1",
+      "puglia_10",
+      "puglia_11",
+      "puglia_12",
+      "puglia_13",
+      "puglia_14",
+      "puglia_2",
+      "puglia_3",
+      "puglia_4",
+      "puglia_5",
+      "puglia_6",
+      "puglia_7",
+      "puglia_8",
+      "puglia_9",
+      "roma_0",
+      "roma_1",
+      "roma_10",
+      "roma_11",
+      "roma_12",
+      "roma_13",
+      "roma_14",
+      "roma_2",
+      "roma_3",
+      "roma_4",
+      "roma_5",
+      "roma_6",
+      "roma_7",
+      "roma_8",
+      "roma_9",
+      "sicilia_0",
+      "sicilia_1",
+      "sicilia_10",
+      "sicilia_11",
+      "sicilia_12",
+      "sicilia_13",
+      "sicilia_14",
+      "sicilia_2",
+      "sicilia_3",
+      "sicilia_4",
+      "sicilia_5",
+      "sicilia_6",
+      "sicilia_7",
+      "sicilia_8",
+      "sicilia_9",
+      "trentino_0",
+      "trentino_1",
+      "trentino_10",
+      "trentino_11",
+      "trentino_12",
+      "trentino_13",
+      "trentino_14",
+      "trentino_2",
+      "trentino_3",
+      "trentino_4",
+      "trentino_5",
+      "trentino_6",
+      "trentino_7",
+      "trentino_8",
+      "trentino_9",
+      "venezia_0",
+      "venezia_1",
+      "venezia_10",
+      "venezia_11",
+      "venezia_12",
+      "venezia_13",
+      "venezia_14",
+      "venezia_2",
+      "venezia_3",
+      "venezia_4",
+      "venezia_5",
+      "venezia_6",
+      "venezia_7",
+      "venezia_8",
+      "venezia_9"
+    ],
+    "amenities": [
+      "Air conditioning",
+      "Bed linens",
+      "Bidet",
+      "Carbon monoxide alarm",
+      "Cooking basics",
+      "Dining table",
+      "Dishes and silverware",
+      "Essentials",
+      "Fire extinguisher",
+      "Freezer",
+      "Hair dryer",
+      "Hangers",
+      "Heating",
+      "Hot water",
+      "Iron",
+      "Kitchen",
+      "Other",
+      "Refrigerator",
+      "Shampoo",
+      "TV",
+      "Wifi"
+    ]
+  },
+  "top_amenities": [
+    "Air conditioning",
+    "Bed linens",
+    "Bidet",
+    "Carbon monoxide alarm",
+    "Cooking basics",
+    "Dining table",
+    "Dishes and silverware",
+    "Essentials",
+    "Fire extinguisher",
+    "Freezer",
+    "Hair dryer",
+    "Hangers",
+    "Heating",
+    "Hot water",
+    "Iron",
+    "Kitchen",
+    "Other",
+    "Refrigerator",
+    "Shampoo",
+    "TV",
+    "Wifi"
+  ],
+  "top_property_types": [
+    "Entire condo",
+    "Entire home",
+    "Entire loft",
+    "Entire rental unit",
+    "Entire serviced apartment",
+    "Entire townhouse",
+    "Entire vacation home",
+    "Entire villa",
+    "Other",
+    "Private room in bed and breakfast",
+    "Private room in condo",
+    "Private room in home",
+    "Private room in rental unit",
+    "Room in hotel",
+    "Tiny home",
+    "Trullo"
+  ],
+  "room_types": [
+    "Entire home/apt",
+    "Hotel room",
+    "Private room",
+    "Shared room"
+  ],
+  "cities": [
+    {
+      "id": "bergamo",
+      "label": "Bergamo",
+      "latitude": 45.6983,
+      "longitude": 9.6773
+    },
+    {
+      "id": "bologna",
+      "label": "Bologna",
+      "latitude": 44.4949,
+      "longitude": 11.3426
+    },
+    {
+      "id": "firenze",
+      "label": "Florence",
+      "latitude": 43.7696,
+      "longitude": 11.2558
+    },
+    {
+      "id": "milano",
+      "label": "Milan",
+      "latitude": 45.4654,
+      "longitude": 9.1859
+    },
+    {
+      "id": "napoli",
+      "label": "Naples",
+      "latitude": 40.8518,
+      "longitude": 14.2681
+    },
+    {
+      "id": "puglia",
+      "label": "Puglia",
+      "latitude": 41.1171,
+      "longitude": 16.8719
+    },
+    {
+      "id": "roma",
+      "label": "Rome",
+      "latitude": 41.9028,
+      "longitude": 12.4964
+    },
+    {
+      "id": "sicilia",
+      "label": "Sicily",
+      "latitude": 38.1157,
+      "longitude": 13.3615
+    },
+    {
+      "id": "trentino",
+      "label": "Trentino",
+      "latitude": 46.0748,
+      "longitude": 11.1217
+    },
+    {
+      "id": "venezia",
+      "label": "Venice",
+      "latitude": 45.4408,
+      "longitude": 12.3155
+    }
+  ],
+  "neighbourhoods_by_city": {
+    "bergamo": [
+      "Bergamo",
+      "Lovere",
+      "Riva di Solto",
+      "Predore",
+      "Solto Collina",
+      "Seriate",
+      "Orio al Serio",
+      "Parzanica",
+      "Costa Volpino",
+      "Sarnico",
+      "Azzano San Paolo",
+      "Rota d'Imagna",
+      "San Pellegrino Terme",
+      "Fonteno",
+      "Colere",
+      "Clusone",
+      "Ranzanico",
+      "Roncola",
+      "Stezzano",
+      "Zanica"
+    ],
+    "bologna": [
+      "Santo Stefano",
+      "Porto - Saragozza",
+      "Navile",
+      "San Donato - San Vitale",
+      "Borgo Panigale - Reno",
+      "Savena"
+    ],
+    "firenze": [
+      "Centro Storico",
+      "Campo di Marte",
+      "Rifredi",
+      "Isolotto Legnaia",
+      "Gavinana Galluzzo"
+    ],
+    "milano": [
+      "DUOMO",
+      "BUENOS AIRES - VENEZIA",
+      "CENTRALE",
+      "BRERA",
+      "NAVIGLI",
+      "SARPI",
+      "LORETO",
+      "ISOLA",
+      "TICINESE",
+      "XXII MARZO",
+      "GUASTALLA",
+      "PORTA ROMANA",
+      "LODI - CORVETTO",
+      "CITTA' STUDI",
+      "MAGENTA - S. VITTORE",
+      "DE ANGELI - MONTE ROSA",
+      "BANDE NERE",
+      "VILLAPIZZONE",
+      "PADOVA",
+      "VIGENTINA"
+    ],
+    "napoli": [
+      "San Lorenzo",
+      "Pendino",
+      "San Ferdinando",
+      "Chiaia",
+      "Montecalvario",
+      "Porto",
+      "Avvocata",
+      "San Giuseppe",
+      "Stella",
+      "San Carlo all'Arena",
+      "Vomero",
+      "Vicaria",
+      "Arenella",
+      "Zona Industriale",
+      "Mercato",
+      "Fuorigrotta",
+      "Posillipo",
+      "Poggioreale",
+      "Secondigliano",
+      "Bagnoli"
+    ],
+    "puglia": [
+      "Bari",
+      "Ostuni",
+      "Lecce",
+      "Monopoli",
+      "Gallipoli",
+      "Polignano a Mare",
+      "Martina Franca",
+      "Nard",
+      "Porto Cesareo",
+      "Otranto",
+      "Fasano",
+      "Brindisi",
+      "Melendugno",
+      "Ceglie Messapica",
+      "Alberobello",
+      "Taranto",
+      "Ugento",
+      "Carovigno",
+      "Locorotondo",
+      "Salve"
+    ],
+    "roma": [
+      "I Centro Storico",
+      "VII San Giovanni/Cinecittà",
+      "XIII Aurelia",
+      "II Parioli/Nomentano",
+      "XII Monte Verde",
+      "V Prenestino/Centocelle",
+      "VIII Appia Antica",
+      "X Ostia/Acilia",
+      "XIV Monte Mario",
+      "XI Arvalia/Portuense",
+      "III Monte Sacro",
+      "XV Cassia/Flaminia",
+      "IV Tiburtina",
+      "IX Eur",
+      "VI Roma delle Torri"
+    ],
+    "sicilia": [
+      "Palermo",
+      "Catania",
+      "Siracusa",
+      "Castellammare del Golfo",
+      "Noto",
+      "Taormina",
+      "Ragusa",
+      "Trapani",
+      "Agrigento",
+      "San Vito Lo Capo",
+      "Marsala",
+      "Cefal",
+      "Giardini-Naxos",
+      "Lipari",
+      "Avola",
+      "Scicli",
+      "Modica",
+      "Sciacca",
+      "Pachino",
+      "Acireale"
+    ],
+    "trentino": [
+      "Trentino",
+      "Trento, Trentino"
+    ],
+    "venezia": [
+      "Cannaregio",
+      "Castello",
+      "San Marco",
+      "Piave 1860",
+      "Dorsoduro",
+      "San Polo",
+      "Santa Croce",
+      "San Lorenzo XXV Aprile",
+      "Lido",
+      "Giudecca",
+      "Marghera",
+      "Murano",
+      "Carpenedo",
+      "Tessera",
+      "Bissuola",
+      "Sant'Elena",
+      "Burano",
+      "Santa Barbara",
+      "Favaro",
+      "Villaggio San Marco"
+    ]
+  },
+  "city_centers": {
+    "bergamo": [
+      {
+        "lat": 45.6983,
+        "lon": 9.6773
+      }
+    ],
+    "bologna": [
+      {
+        "lat": 44.4949,
+        "lon": 11.3426
+      }
+    ],
+    "firenze": [
+      {
+        "lat": 43.7696,
+        "lon": 11.2558
+      }
+    ],
+    "milano": [
+      {
+        "lat": 45.4654,
+        "lon": 9.1859
+      }
+    ],
+    "napoli": [
+      {
+        "lat": 40.8518,
+        "lon": 14.2681
+      }
+    ],
+    "puglia": [
+      {
+        "city": "Bari",
+        "lat": 41.1171,
+        "lon": 16.8719
+      },
+      {
+        "city": "Foggia",
+        "lat": 41.4621,
+        "lon": 15.5444
+      },
+      {
+        "city": "Taranto",
+        "lat": 40.4644,
+        "lon": 17.247
+      },
+      {
+        "city": "Lecce",
+        "lat": 40.3516,
+        "lon": 18.1752
+      },
+      {
+        "city": "Brindisi",
+        "lat": 40.6326,
+        "lon": 17.9417
+      },
+      {
+        "city": "Andria",
+        "lat": 41.2278,
+        "lon": 16.2961
+      },
+      {
+        "city": "Barletta",
+        "lat": 41.3197,
+        "lon": 16.282
+      }
+    ],
+    "roma": [
+      {
+        "lat": 41.9028,
+        "lon": 12.4964
+      }
+    ],
+    "sicilia": [
+      {
+        "city": "Palermo",
+        "lat": 38.1157,
+        "lon": 13.3615
+      },
+      {
+        "city": "Catania",
+        "lat": 37.5079,
+        "lon": 15.083
+      },
+      {
+        "city": "Messina",
+        "lat": 38.1938,
+        "lon": 15.554
+      },
+      {
+        "city": "Siracusa",
+        "lat": 37.0755,
+        "lon": 15.2866
+      },
+      {
+        "city": "Agrigento",
+        "lat": 37.3111,
+        "lon": 13.5765
+      },
+      {
+        "city": "Trapani",
+        "lat": 38.0176,
+        "lon": 12.5365
+      },
+      {
+        "city": "Ragusa",
+        "lat": 36.9282,
+        "lon": 14.7256
+      }
+    ],
+    "trentino": [
+      {
+        "city": "Trento",
+        "lat": 46.0748,
+        "lon": 11.1217
+      },
+      {
+        "city": "Bolzano",
+        "lat": 46.4983,
+        "lon": 11.3548
+      },
+      {
+        "city": "Rovereto",
+        "lat": 45.8912,
+        "lon": 11.0396
+      },
+      {
+        "city": "Merano",
+        "lat": 46.6713,
+        "lon": 11.1594
+      },
+      {
+        "city": "Bressanone",
+        "lat": 46.7154,
+        "lon": 11.6565
+      }
+    ],
+    "venezia": [
+      {
+        "lat": 45.4408,
+        "lon": 12.3155
+      }
+    ]
+  },
+  "poi_by_city": {
+    "bergamo": [
+      {
+        "lat": 45.704,
+        "lon": 9.6623
+      },
+      {
+        "lat": 45.7035,
+        "lon": 9.6622
+      },
+      {
+        "lat": 45.7035,
+        "lon": 9.6627
+      },
+      {
+        "lat": 45.7034,
+        "lon": 9.6623
+      },
+      {
+        "lat": 45.7038,
+        "lon": 9.6627
+      },
+      {
+        "lat": 45.7041,
+        "lon": 9.663
+      },
+      {
+        "lat": 45.7041,
+        "lon": 9.6578
+      }
+    ],
+    "bologna": [
+      {
+        "lat": 44.4942,
+        "lon": 11.3467
+      },
+      {
+        "lat": 44.4938,
+        "lon": 11.3431
+      },
+      {
+        "lat": 44.4919,
+        "lon": 11.3433
+      },
+      {
+        "lat": 44.4911,
+        "lon": 11.3436
+      },
+      {
+        "lat": 44.4923,
+        "lon": 11.3483
+      },
+      {
+        "lat": 44.4937,
+        "lon": 11.3422
+      },
+      {
+        "lat": 44.4896,
+        "lon": 11.344
+      }
+    ],
+    "firenze": [
+      {
+        "lat": 43.7693,
+        "lon": 11.2562
+      },
+      {
+        "lat": 43.7731,
+        "lon": 11.256
+      },
+      {
+        "lat": 43.7697,
+        "lon": 11.2556
+      },
+      {
+        "lat": 43.7686,
+        "lon": 11.2623
+      },
+      {
+        "lat": 43.7629,
+        "lon": 11.2651
+      },
+      {
+        "lat": 43.7729,
+        "lon": 11.2558
+      },
+      {
+        "lat": 43.7692,
+        "lon": 11.2555
+      }
+    ],
+    "milano": [
+      {
+        "lat": 45.4641,
+        "lon": 9.1919
+      },
+      {
+        "lat": 45.4642,
+        "lon": 9.1897
+      },
+      {
+        "lat": 45.4705,
+        "lon": 9.1793
+      },
+      {
+        "lat": 45.4658,
+        "lon": 9.1899
+      },
+      {
+        "lat": 45.466,
+        "lon": 9.171
+      },
+      {
+        "lat": 45.4864,
+        "lon": 9.1826
+      },
+      {
+        "lat": 45.4692,
+        "lon": 9.1809
+      }
+    ],
+    "napoli": [
+      {
+        "lat": 40.8651,
+        "lon": 14.2474
+      },
+      {
+        "lat": 40.8373,
+        "lon": 14.2455
+      },
+      {
+        "lat": 40.8362,
+        "lon": 14.2494
+      },
+      {
+        "lat": 40.8536,
+        "lon": 14.2505
+      },
+      {
+        "lat": 40.8385,
+        "lon": 14.2527
+      },
+      {
+        "lat": 40.8358,
+        "lon": 14.2486
+      },
+      {
+        "lat": 40.8436,
+        "lon": 14.2408
+      },
+      {
+        "lat": 40.8595,
+        "lon": 14.2485
+      }
+    ],
+    "puglia": [
+      {
+        "lat": 41.1303,
+        "lon": 16.8701
+      },
+      {
+        "lat": 41.1286,
+        "lon": 16.8688
+      },
+      {
+        "lat": 41.1279,
+        "lon": 16.8664
+      },
+      {
+        "lat": 40.8759,
+        "lon": 17.148
+      },
+      {
+        "lat": 41.0848,
+        "lon": 16.2709
+      }
+    ],
+    "roma": [
+      {
+        "lat": 41.8921,
+        "lon": 12.4864
+      },
+      {
+        "lat": 41.9009,
+        "lon": 12.4833
+      },
+      {
+        "lat": 41.8986,
+        "lon": 12.4769
+      },
+      {
+        "lat": 41.8902,
+        "lon": 12.4922
+      },
+      {
+        "lat": 41.8992,
+        "lon": 12.4731
+      },
+      {
+        "lat": 41.9107,
+        "lon": 12.4764
+      },
+      {
+        "lat": 41.8956,
+        "lon": 12.4722
+      },
+      {
+        "lat": 41.906,
+        "lon": 12.4828
+      }
+    ],
+    "sicilia": [
+      {
+        "lat": 38.1132,
+        "lon": 13.353
+      },
+      {
+        "lat": 38.1109,
+        "lon": 13.3517
+      },
+      {
+        "lat": 37.5025,
+        "lon": 15.0871
+      },
+      {
+        "lat": 37.5024,
+        "lon": 15.0877
+      },
+      {
+        "lat": 37.5024,
+        "lon": 15.0906
+      },
+      {
+        "lat": 37.509,
+        "lon": 15.1025
+      },
+      {
+        "lat": 37.5022,
+        "lon": 15.0877
+      }
+    ],
+    "trentino": [
+      {
+        "lat": 46.0715,
+        "lon": 11.1271
+      },
+      {
+        "lat": 46.0673,
+        "lon": 11.1215
+      },
+      {
+        "lat": 46.0695,
+        "lon": 11.1214
+      },
+      {
+        "lat": 46.4983,
+        "lon": 11.3548
+      },
+      {
+        "lat": 46.5011,
+        "lon": 11.357
+      },
+      {
+        "lat": 46.4828,
+        "lon": 11.1322
+      }
+    ],
+    "venezia": [
+      {
+        "lat": 45.4346,
+        "lon": 12.3397
+      },
+      {
+        "lat": 45.4337,
+        "lon": 12.3404
+      },
+      {
+        "lat": 45.438,
+        "lon": 12.3359
+      },
+      {
+        "lat": 45.434,
+        "lon": 12.3409
+      },
+      {
+        "lat": 45.4342,
+        "lon": 12.3385
+      },
+      {
+        "lat": 45.434,
+        "lon": 12.339
+      },
+      {
+        "lat": 45.4348,
+        "lon": 12.3368
+      }
+    ]
+  },
+  "geo_cluster_centers": {
+    "bergamo": [
+      {
+        "cluster": 0,
+        "lat": 45.762068137444466,
+        "lon": 9.917764402871505
+      },
+      {
+        "cluster": 1,
+        "lat": 45.694052221476916,
+        "lon": 9.670108147554812
+      },
+      {
+        "cluster": 2,
+        "lat": 45.84374241584255,
+        "lon": 9.687412796922409
+      },
+      {
+        "cluster": 3,
+        "lat": 45.82064292453742,
+        "lon": 10.07677013798699
+      },
+      {
+        "cluster": 4,
+        "lat": 45.982964580088044,
+        "lon": 10.081698795075106
+      },
+      {
+        "cluster": 5,
+        "lat": 45.73463780336949,
+        "lon": 9.559190669225488
+      },
+      {
+        "cluster": 6,
+        "lat": 46.00386754685822,
+        "lon": 9.723635442423163
+      },
+      {
+        "cluster": 7,
+        "lat": 45.67495414314074,
+        "lon": 9.979104073047038
+      },
+      {
+        "cluster": 8,
+        "lat": 45.5673397855923,
+        "lon": 9.828606264728123
+      },
+      {
+        "cluster": 9,
+        "lat": 45.83533406358885,
+        "lon": 9.78980552688479
+      },
+      {
+        "cluster": 10,
+        "lat": 45.600797429396465,
+        "lon": 9.606278308499448
+      },
+      {
+        "cluster": 11,
+        "lat": 45.84394995007968,
+        "lon": 9.53060014768737
+      },
+      {
+        "cluster": 12,
+        "lat": 45.69666652522733,
+        "lon": 9.743314049477613
+      },
+      {
+        "cluster": 13,
+        "lat": 45.767014990490374,
+        "lon": 10.03590525499535
+      },
+      {
+        "cluster": 14,
+        "lat": 45.90534446763472,
+        "lon": 9.949907933610634
+      }
+    ],
+    "bologna": [
+      {
+        "cluster": 0,
+        "lat": 44.50867496799427,
+        "lon": 11.341671076694423
+      },
+      {
+        "cluster": 1,
+        "lat": 44.497090132834025,
+        "lon": 11.345823975195755
+      },
+      {
+        "cluster": 2,
+        "lat": 44.51726235549532,
+        "lon": 11.279328861413957
+      },
+      {
+        "cluster": 3,
+        "lat": 44.505213322465835,
+        "lon": 11.366506751136036
+      },
+      {
+        "cluster": 4,
+        "lat": 44.4977549945895,
+        "lon": 11.334863117923966
+      },
+      {
+        "cluster": 5,
+        "lat": 44.50150326021064,
+        "lon": 11.3018453437344
+      },
+      {
+        "cluster": 6,
+        "lat": 44.492247732402326,
+        "lon": 11.370759095995785
+      },
+      {
+        "cluster": 7,
+        "lat": 44.50650703146198,
+        "lon": 11.352855852203303
+      },
+      {
+        "cluster": 8,
+        "lat": 44.45039419753086,
+        "lon": 11.351963086419753
+      },
+      {
+        "cluster": 9,
+        "lat": 44.49349477364219,
+        "lon": 11.398850881615031
+      },
+      {
+        "cluster": 10,
+        "lat": 44.4903722048528,
+        "lon": 11.352541279990552
+      },
+      {
+        "cluster": 11,
+        "lat": 44.47729363793874,
+        "lon": 11.375570699913157
+      },
+      {
+        "cluster": 12,
+        "lat": 44.49037412790347,
+        "lon": 11.338831089523485
+      },
+      {
+        "cluster": 13,
+        "lat": 44.52638059390411,
+        "lon": 11.353824288121107
+      },
+      {
+        "cluster": 14,
+        "lat": 44.49361246182909,
+        "lon": 11.320863976939336
+      }
+    ],
+    "firenze": [
+      {
+        "cluster": 0,
+        "lat": 43.76924876599968,
+        "lon": 11.254224974832708
+      },
+      {
+        "cluster": 1,
+        "lat": 43.793893184193145,
+        "lon": 11.220468549924284
+      },
+      {
+        "cluster": 2,
+        "lat": 43.7871906614766,
+        "lon": 11.275949056921652
+      },
+      {
+        "cluster": 3,
+        "lat": 43.77133878923193,
+        "lon": 11.215838132413404
+      },
+      {
+        "cluster": 4,
+        "lat": 43.77933278671909,
+        "lon": 11.257535644419283
+      },
+      {
+        "cluster": 5,
+        "lat": 43.77479747030413,
+        "lon": 11.249098632773844
+      },
+      {
+        "cluster": 6,
+        "lat": 43.770353449139314,
+        "lon": 11.261961076481013
+      },
+      {
+        "cluster": 7,
+        "lat": 43.77094810077794,
+        "lon": 11.272621341116665
+      },
+      {
+        "cluster": 8,
+        "lat": 43.74242406320169,
+        "lon": 11.229022142311543
+      },
+      {
+        "cluster": 9,
+        "lat": 43.76547708804871,
+        "lon": 11.286303101142007
+      },
+      {
+        "cluster": 10,
+        "lat": 43.78732908711546,
+        "lon": 11.188932789645898
+      },
+      {
+        "cluster": 11,
+        "lat": 43.780608277375784,
+        "lon": 11.238038632018059
+      },
+      {
+        "cluster": 12,
+        "lat": 43.774488162805525,
+        "lon": 11.311121139671869
+      },
+      {
+        "cluster": 13,
+        "lat": 43.795918824589926,
+        "lon": 11.242752533900116
+      },
+      {
+        "cluster": 14,
+        "lat": 43.7665019073254,
+        "lon": 11.244058377451221
+      }
+    ],
+    "milano": [
+      {
+        "cluster": 0,
+        "lat": 45.44348009918891,
+        "lon": 9.2254663795318
+      },
+      {
+        "cluster": 1,
+        "lat": 45.47972301625934,
+        "lon": 9.167839093437452
+      },
+      {
+        "cluster": 2,
+        "lat": 45.506530087716676,
+        "lon": 9.228820892478833
+      },
+      {
+        "cluster": 3,
+        "lat": 45.46739332919818,
+        "lon": 9.14230032363799
+      },
+      {
+        "cluster": 4,
+        "lat": 45.472002060512935,
+        "lon": 9.208195089054222
+      },
+      {
+        "cluster": 5,
+        "lat": 45.49390297945998,
+        "lon": 9.143776936214012
+      },
+      {
+        "cluster": 6,
+        "lat": 45.449359584456595,
+        "lon": 9.174923499827921
+      },
+      {
+        "cluster": 7,
+        "lat": 45.484480535641204,
+        "lon": 9.187925669952715
+      },
+      {
+        "cluster": 8,
+        "lat": 45.48909128696384,
+        "lon": 9.209731054817748
+      },
+      {
+        "cluster": 9,
+        "lat": 45.44917827798255,
+        "lon": 9.203026925443156
+      },
+      {
+        "cluster": 10,
+        "lat": 45.44850225428968,
+        "lon": 9.15151283361325
+      },
+      {
+        "cluster": 11,
+        "lat": 45.477326374932055,
+        "lon": 9.106509114779383
+      },
+      {
+        "cluster": 12,
+        "lat": 45.50684765969176,
+        "lon": 9.175755029724904
+      },
+      {
+        "cluster": 13,
+        "lat": 45.474294022177446,
+        "lon": 9.231485131920097
+      },
+      {
+        "cluster": 14,
+        "lat": 45.463244526476494,
+        "lon": 9.18706936802899
+      }
+    ],
+    "napoli": [
+      {
+        "cluster": 0,
+        "lat": 40.83681682742484,
+        "lon": 14.245841123792342
+      },
+      {
+        "cluster": 1,
+        "lat": 40.85127236185528,
+        "lon": 14.26049290443525
+      },
+      {
+        "cluster": 2,
+        "lat": 40.831496898421655,
+        "lon": 14.219830121522433
+      },
+      {
+        "cluster": 3,
+        "lat": 40.87845397718476,
+        "lon": 14.274624229195513
+      },
+      {
+        "cluster": 4,
+        "lat": 40.857408550307234,
+        "lon": 14.250928431423722
+      },
+      {
+        "cluster": 5,
+        "lat": 40.82709372713894,
+        "lon": 14.165841526179621
+      },
+      {
+        "cluster": 6,
+        "lat": 40.83776474203829,
+        "lon": 14.302952785932371
+      },
+      {
+        "cluster": 7,
+        "lat": 40.86521643815603,
+        "lon": 14.225552096569064
+      },
+      {
+        "cluster": 8,
+        "lat": 40.82166132879404,
+        "lon": 14.19736252968863
+      },
+      {
+        "cluster": 9,
+        "lat": 40.864152463539035,
+        "lon": 14.322769303272256
+      },
+      {
+        "cluster": 10,
+        "lat": 40.85265544443778,
+        "lon": 14.27076250042905
+      },
+      {
+        "cluster": 11,
+        "lat": 40.84448057339438,
+        "lon": 14.254002642449167
+      },
+      {
+        "cluster": 12,
+        "lat": 40.84841896615798,
+        "lon": 14.245928647567384
+      },
+      {
+        "cluster": 13,
+        "lat": 40.861622640054215,
+        "lon": 14.266972087734686
+      },
+      {
+        "cluster": 14,
+        "lat": 40.843128358325686,
+        "lon": 14.231316751198746
+      }
+    ],
+    "puglia": [
+      {
+        "cluster": 0,
+        "lat": 40.13799121083972,
+        "lon": 18.409988055672205
+      },
+      {
+        "cluster": 1,
+        "lat": 40.949173039435344,
+        "lon": 17.213638088419316
+      },
+      {
+        "cluster": 2,
+        "lat": 41.81849156833277,
+        "lon": 16.023940262720338
+      },
+      {
+        "cluster": 3,
+        "lat": 40.05311538727791,
+        "lon": 18.0569559595301
+      },
+      {
+        "cluster": 4,
+        "lat": 40.68804988804446,
+        "lon": 17.57898806014823
+      },
+      {
+        "cluster": 5,
+        "lat": 41.24545226633944,
+        "lon": 16.396088218573944
+      },
+      {
+        "cluster": 6,
+        "lat": 41.1122675016431,
+        "lon": 16.854035111980682
+      },
+      {
+        "cluster": 7,
+        "lat": 40.463299781931006,
+        "lon": 17.22279828081272
+      },
+      {
+        "cluster": 8,
+        "lat": 40.35040811512718,
+        "lon": 18.157299892244563
+      },
+      {
+        "cluster": 9,
+        "lat": 40.3005056522675,
+        "lon": 17.773898013608697
+      },
+      {
+        "cluster": 10,
+        "lat": 41.57688436719192,
+        "lon": 15.478419054967873
+      },
+      {
+        "cluster": 11,
+        "lat": 39.86866620360736,
+        "lon": 18.299968008465193
+      },
+      {
+        "cluster": 12,
+        "lat": 40.800931501901744,
+        "lon": 16.63802283798317
+      },
+      {
+        "cluster": 13,
+        "lat": 40.76528871951329,
+        "lon": 17.33484053853626
+      },
+      {
+        "cluster": 14,
+        "lat": 40.6154323043561,
+        "lon": 17.8850737849847
+      }
+    ],
+    "roma": [
+      {
+        "cluster": 0,
+        "lat": 41.8839226731565,
+        "lon": 12.52056984146746
+      },
+      {
+        "cluster": 1,
+        "lat": 41.906740982698174,
+        "lon": 12.453948832872655
+      },
+      {
+        "cluster": 2,
+        "lat": 41.73519797654402,
+        "lon": 12.28365709983771
+      },
+      {
+        "cluster": 3,
+        "lat": 41.88175598232421,
+        "lon": 12.465954543846756
+      },
+      {
+        "cluster": 4,
+        "lat": 41.92827423510642,
+        "lon": 12.53041180324971
+      },
+      {
+        "cluster": 5,
+        "lat": 41.897576430933505,
+        "lon": 12.499267824538949
+      },
+      {
+        "cluster": 6,
+        "lat": 42.037898635051164,
+        "lon": 12.336271900092436
+      },
+      {
+        "cluster": 7,
+        "lat": 41.86468627589769,
+        "lon": 12.643274450128526
+      },
+      {
+        "cluster": 8,
+        "lat": 41.87053508967225,
+        "lon": 12.5635234030422
+      },
+      {
+        "cluster": 9,
+        "lat": 41.90166474641274,
+        "lon": 12.475433358965548
+      },
+      {
+        "cluster": 10,
+        "lat": 41.77662255201251,
+        "lon": 12.36160762322205
+      },
+      {
+        "cluster": 11,
+        "lat": 41.957063510369665,
+        "lon": 12.447380604589972
+      },
+      {
+        "cluster": 12,
+        "lat": 41.81493153220981,
+        "lon": 12.46316211681004
+      },
+      {
+        "cluster": 13,
+        "lat": 41.86247009163189,
+        "lon": 12.482241014943819
+      },
+      {
+        "cluster": 14,
+        "lat": 41.899320251574395,
+        "lon": 12.422787156189964
+      }
+    ],
+    "sicilia": [
+      {
+        "cluster": 0,
+        "lat": 37.064045759598784,
+        "lon": 15.264126101720883
+      },
+      {
+        "cluster": 1,
+        "lat": 38.12873267938636,
+        "lon": 13.35640130321169
+      },
+      {
+        "cluster": 2,
+        "lat": 38.33176825547355,
+        "lon": 14.861887850352042
+      },
+      {
+        "cluster": 3,
+        "lat": 37.909895919987925,
+        "lon": 12.492962591180452
+      },
+      {
+        "cluster": 4,
+        "lat": 35.5097491411931,
+        "lon": 12.61046445578647
+      },
+      {
+        "cluster": 5,
+        "lat": 37.917135734634634,
+        "lon": 15.272173739564645
+      },
+      {
+        "cluster": 6,
+        "lat": 36.83159315690799,
+        "lon": 14.67274926228546
+      },
+      {
+        "cluster": 7,
+        "lat": 37.3213168823237,
+        "lon": 13.578685442165735
+      },
+      {
+        "cluster": 8,
+        "lat": 37.97804468318913,
+        "lon": 14.02591468365606
+      },
+      {
+        "cluster": 9,
+        "lat": 36.7938396668839,
+        "lon": 11.983108005000439
+      },
+      {
+        "cluster": 10,
+        "lat": 37.53245714712521,
+        "lon": 15.086529578830913
+      },
+      {
+        "cluster": 11,
+        "lat": 37.57220028102548,
+        "lon": 13.003778905171352
+      },
+      {
+        "cluster": 12,
+        "lat": 38.07405904830866,
+        "lon": 12.88189953176708
+      },
+      {
+        "cluster": 13,
+        "lat": 37.3216650793477,
+        "lon": 14.253927398225452
+      },
+      {
+        "cluster": 14,
+        "lat": 36.83121516915843,
+        "lon": 15.068785282384969
+      }
+    ],
+    "trentino": [
+      {
+        "cluster": 0,
+        "lat": 45.89617378166469,
+        "lon": 10.860521891789917
+      },
+      {
+        "cluster": 1,
+        "lat": 46.43734813212591,
+        "lon": 11.718317718565638
+      },
+      {
+        "cluster": 2,
+        "lat": 46.03889524024641,
+        "lon": 11.270807228925161
+      },
+      {
+        "cluster": 3,
+        "lat": 46.330634382971105,
+        "lon": 10.85336504276168
+      },
+      {
+        "cluster": 4,
+        "lat": 46.29248830220613,
+        "lon": 11.49800814432827
+      },
+      {
+        "cluster": 5,
+        "lat": 46.16374651553364,
+        "lon": 10.777436730332491
+      },
+      {
+        "cluster": 6,
+        "lat": 46.167268016862906,
+        "lon": 11.018507267085763
+      },
+      {
+        "cluster": 7,
+        "lat": 46.20395581298626,
+        "lon": 11.800543235665119
+      },
+      {
+        "cluster": 8,
+        "lat": 45.87749018712814,
+        "lon": 11.056018057571828
+      },
+      {
+        "cluster": 9,
+        "lat": 45.913756471944154,
+        "lon": 10.716875810515866
+      },
+      {
+        "cluster": 10,
+        "lat": 46.38411646862844,
+        "lon": 11.09160403768535
+      },
+      {
+        "cluster": 11,
+        "lat": 46.0653397822903,
+        "lon": 11.528002605882092
+      },
+      {
+        "cluster": 12,
+        "lat": 46.082229837533625,
+        "lon": 11.129956742490918
+      },
+      {
+        "cluster": 13,
+        "lat": 46.02506530261606,
+        "lon": 10.90700114768773
+      },
+      {
+        "cluster": 14,
+        "lat": 46.304119158789554,
+        "lon": 10.66361334661637
+      }
+    ],
+    "venezia": [
+      {
+        "cluster": 0,
+        "lat": 45.43928023909402,
+        "lon": 12.336738403822613
+      },
+      {
+        "cluster": 1,
+        "lat": 45.48616875222338,
+        "lon": 12.23606357652368
+      },
+      {
+        "cluster": 2,
+        "lat": 45.43610803692736,
+        "lon": 12.345568039404318
+      },
+      {
+        "cluster": 3,
+        "lat": 45.48047762154043,
+        "lon": 12.416765602218458
+      },
+      {
+        "cluster": 4,
+        "lat": 45.502354761180875,
+        "lon": 12.324417566815383
+      },
+      {
+        "cluster": 5,
+        "lat": 45.41087636741254,
+        "lon": 12.368415789291321
+      },
+      {
+        "cluster": 6,
+        "lat": 45.49786945026903,
+        "lon": 12.284935524438977
+      },
+      {
+        "cluster": 7,
+        "lat": 45.442601312735526,
+        "lon": 12.326672345173519
+      },
+      {
+        "cluster": 8,
+        "lat": 45.47889207860757,
+        "lon": 12.219226118399472
+      },
+      {
+        "cluster": 9,
+        "lat": 45.34010638697898,
+        "lon": 12.319705139549392
+      },
+      {
+        "cluster": 10,
+        "lat": 45.43177999314082,
+        "lon": 12.355916504307661
+      },
+      {
+        "cluster": 11,
+        "lat": 45.43285253475526,
+        "lon": 12.322140518728554
+      },
+      {
+        "cluster": 12,
+        "lat": 45.49642627662589,
+        "lon": 12.251777013679035
+      },
+      {
+        "cluster": 13,
+        "lat": 45.45647370486572,
+        "lon": 12.354270400057638
+      },
+      {
+        "cluster": 14,
+        "lat": 45.432830465323136,
+        "lon": 12.331584213541833
+      }
+    ]
+  }
+}

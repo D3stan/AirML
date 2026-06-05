@@ -9,6 +9,7 @@ ARTIFACTS_DIR = WEB_APP_DIR / "artifacts"
 OCCUPANCY_PREPROCESSOR_PATH = ARTIFACTS_DIR / "occ_model_preprocessor.joblib"
 OCCUPANCY_MODEL_PATH = ARTIFACTS_DIR / "occ_model_xgboost.joblib"
 OCCUPANCY_TEMPLATE_PATH = ARTIFACTS_DIR / "occ_model_payload.json"
+OCCUPANCY_METADATA_PATH = ARTIFACTS_DIR / "occ_feature_metadata.json"
 
 CORS_ORIGINS = [
     "http://127.0.0.1:5173",

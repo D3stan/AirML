@@ -15,14 +15,14 @@ export const occupancyModelFallback = {
 
 export const cityProfiles = {
   Rome: {
-    latitude: 41.900488,
-    longitude: 12.526131,
-    neighbourhoods: ["Trastevere", "Monti", "Prati", "Centro Storico", "Testaccio"],
+    latitude: 41.9028,
+    longitude: 12.4964,
+    neighbourhoods: ["I Centro Storico", "VII San Giovanni/Cinecittà", "XIII Aurelia", "II Parioli/Nomentano", "XII Monte Verde"],
   },
   Florence: {
     latitude: 43.769562,
     longitude: 11.255814,
-    neighbourhoods: ["Santa Croce", "Santo Spirito", "Duomo", "San Lorenzo", "Campo di Marte"],
+    neighbourhoods: ["Centro Storico", "Campo di Marte", "Rifredi", "Isolotto Legnaia", "Gavinana Galluzzo"],
   },
   Venice: {
     latitude: 45.440847,
@@ -37,12 +37,32 @@ export const cityProfiles = {
   Bologna: {
     latitude: 44.494887,
     longitude: 11.342616,
-    neighbourhoods: ["Centro Storico", "Bolognina", "Saragozza", "Santo Stefano", "San Donato"],
+    neighbourhoods: ["Santo Stefano", "Porto - Saragozza", "Navile", "San Donato - San Vitale", "Borgo Panigale - Reno"],
   },
   Naples: {
     latitude: 40.851775,
     longitude: 14.268124,
     neighbourhoods: ["Chiaia", "Centro Storico", "Vomero", "Posillipo", "Quartieri Spagnoli"],
+  },
+  Bergamo: {
+    latitude: 45.6983,
+    longitude: 9.6773,
+    neighbourhoods: ["Bergamo", "Riva di Solto", "Lovere", "Parzanica", "Seriate"],
+  },
+  Puglia: {
+    latitude: 41.1171,
+    longitude: 16.8719,
+    neighbourhoods: ["Bari", "Ostuni", "Lecce", "Gallipoli", "Monopoli"],
+  },
+  Sicily: {
+    latitude: 38.1157,
+    longitude: 13.3615,
+    neighbourhoods: ["Palermo", "Catania", "Siracusa", "Noto", "Castellammare del Golfo"],
+  },
+  Trentino: {
+    latitude: 46.0748,
+    longitude: 11.1217,
+    neighbourhoods: ["Trentino", "Trento, Trentino"],
   },
 };
 
@@ -52,8 +72,18 @@ export const propertyTypeOptions = [
   "Entire rental unit",
   "Entire condo",
   "Entire home",
+  "Entire loft",
+  "Entire serviced apartment",
+  "Entire townhouse",
+  "Entire vacation home",
+  "Entire villa",
+  "Private room in bed and breakfast",
+  "Private room in condo",
   "Private room in rental unit",
   "Private room in home",
+  "Room in hotel",
+  "Tiny home",
+  "Trullo",
   "Other",
 ];
 
@@ -80,7 +110,6 @@ export const amenityOptions = [
   "Fire extinguisher",
   "Freezer",
   "Bidet",
-  "Pool",
 ];
 
 export const defaultPropertySettings = {
@@ -107,6 +136,10 @@ export const defaultPropertySettings = {
     "Hot water",
     "Iron",
     "Bed linens",
+    "Shampoo",
+    "TV",
+    "Freezer",
+    "Bidet",
   ],
   minimum_nights: 2,
   maximum_nights: 365,

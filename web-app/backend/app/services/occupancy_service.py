@@ -8,8 +8,8 @@ from fastapi import HTTPException
 
 from app.models.occupancy import OCCUPANCY_MODELS
 from app.schemas.occupancy import OccupancyPredictionRequest
-from app.services.artifacts import load_occupancy_artifacts, load_occupancy_template
-from app.services.occupancy_features import MONTHS, build_occupancy_feature_row
+from app.services.artifacts import load_occupancy_artifacts, load_occupancy_metadata
+from app.services.occupancy_features import MONTHS, OccupancyFeaturePipeline
 
 
 logger = logging.getLogger("airml-backend")
@@ -17,6 +17,19 @@ logger = logging.getLogger("airml-backend")
 
 def list_occupancy_models() -> list[dict[str, int | str]]:
     return [model.to_api() for model in OCCUPANCY_MODELS.values()]
+
+
+def settings_options() -> dict[str, Any]:
+    metadata = load_occupancy_metadata()
+    amenities = [amenity for amenity in metadata["top_amenities"] if amenity != "Other"]
+
+    return {
+        "cities": metadata["cities"],
+        "neighbourhoodsByCity": metadata["neighbourhoods_by_city"],
+        "propertyTypes": metadata["top_property_types"],
+        "roomTypes": metadata["room_types"],
+        "amenities": amenities,
+    }
 
 
 def _coerce_prediction(value: Any, month_label: str) -> float:
@@ -68,11 +81,12 @@ def predict_occupancy(payload: OccupancyPredictionRequest) -> dict[str, Any]:
     if model_metadata is None:
         raise HTTPException(status_code=404, detail=f"Unsupported occupancy model_id: {payload.model_id}")
 
-    template = load_occupancy_template()
+    metadata = load_occupancy_metadata()
+    feature_pipeline = OccupancyFeaturePipeline(metadata)
     monthly: dict[str, int] = {}
 
     for month_label, month_number, days_in_month in MONTHS:
-        feature_row = build_occupancy_feature_row(template, payload.property, month_number)
+        feature_row = feature_pipeline.build_feature_row(payload.property, month_number)
         raw_prediction = _predict_month(feature_row)
         prediction = _coerce_prediction(raw_prediction, month_label)
 

@@ -9,7 +9,12 @@ from typing import Any
 
 from fastapi import HTTPException
 
-from app.core.config import OCCUPANCY_MODEL_PATH, OCCUPANCY_PREPROCESSOR_PATH, OCCUPANCY_TEMPLATE_PATH
+from app.core.config import (
+    OCCUPANCY_METADATA_PATH,
+    OCCUPANCY_MODEL_PATH,
+    OCCUPANCY_PREPROCESSOR_PATH,
+    OCCUPANCY_TEMPLATE_PATH,
+)
 from app.ml.legacy import MLBTransformer
 
 
@@ -45,6 +50,28 @@ def load_occupancy_template() -> dict[str, Any]:
         raise HTTPException(status_code=503, detail=message)
 
     return template
+
+
+@lru_cache(maxsize=1)
+def load_occupancy_metadata() -> dict[str, Any]:
+    """Load the raw-feature metadata exported from the notebook pipeline."""
+
+    ensure_artifact(OCCUPANCY_METADATA_PATH)
+
+    try:
+        with OCCUPANCY_METADATA_PATH.open(encoding="utf-8") as metadata_file:
+            metadata = json.load(metadata_file)
+    except Exception as exc:  # pragma: no cover - corrupt local artifact
+        message = f"Unable to load occupancy metadata at {OCCUPANCY_METADATA_PATH}: {exc}"
+        logger.exception(message)
+        raise HTTPException(status_code=503, detail=message) from exc
+
+    if not isinstance(metadata, dict):
+        message = f"Occupancy metadata must be a JSON object: {OCCUPANCY_METADATA_PATH}"
+        logger.error(message)
+        raise HTTPException(status_code=503, detail=message)
+
+    return metadata
 
 
 @lru_cache(maxsize=1)
