@@ -88,38 +88,41 @@ export default function Header({ mode = "dashboard" }) {
   const texts = textBundle(language);
 
   return (
-    <header className="sticky top-0 z-40 bg-[#f8fafc]/95 backdrop-blur">
-      <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between px-4 md:px-8">
-        <Link to="/dashboard" className="flex items-center gap-3">
-          <AirMlLogo />
-          <span className="flex flex-col">
-            <span className="font-display text-[30px] font-extrabold leading-7 text-primary">AirML</span>
-            <span className="text-[11px] font-bold uppercase leading-4 tracking-[0.04em] text-on-surface">{texts.dashboardSubtitle}</span>
-          </span>
-        </Link>
+    <>
+      <header className="fixed inset-x-0 top-0 z-40 bg-[#f8fafc]/95 backdrop-blur md:sticky">
+        <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between px-4 md:px-8">
+          <Link to="/dashboard" className="flex items-center gap-3">
+            <AirMlLogo />
+            <span className="flex flex-col">
+              <span className="font-display text-[30px] font-extrabold leading-7 text-primary">AirML</span>
+              <span className="text-[11px] font-bold uppercase leading-4 tracking-[0.04em] text-on-surface">{texts.dashboardSubtitle}</span>
+            </span>
+          </Link>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <LanguageSelector />
-          {isSettings ? (
-            <Link
-              to="/dashboard"
-              className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 text-label-md text-on-surface-variant shadow-ambient-soft transition hover:border-primary hover:text-primary sm:h-11 sm:px-4"
-            >
-              <ArrowLeft size={18} />
-              <span className="hidden sm:inline">{texts.backToDashboard}</span>
-            </Link>
-          ) : (
-            <Link
-              to="/settings"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary shadow-ambient-soft transition hover:border-primary sm:h-11 sm:w-11"
-              aria-label={texts.openSettings}
-              title={texts.openSettings}
-            >
-              <Settings size={20} />
-            </Link>
-          )}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSelector />
+            {isSettings ? (
+              <Link
+                to="/dashboard"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 text-label-md text-on-surface-variant shadow-ambient-soft transition hover:border-primary hover:text-primary sm:h-11 sm:px-4"
+              >
+                <ArrowLeft size={18} />
+                <span className="hidden sm:inline">{texts.backToDashboard}</span>
+              </Link>
+            ) : (
+              <Link
+                to="/settings"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary shadow-ambient-soft transition hover:border-primary sm:h-11 sm:w-11"
+                aria-label={texts.openSettings}
+                title={texts.openSettings}
+              >
+                <Settings size={20} />
+              </Link>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <div className="h-[72px] md:hidden" aria-hidden="true" />
+    </>
   );
 }
