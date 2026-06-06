@@ -13,7 +13,7 @@
 ## Web app
 Le istruzioni su come eseguire la web app sono presenti nella cartella web-app. Si può inoltre visualizzare una demo su [AirMl](https://airml.0xpuddu.com/dashboard) 
 
-## Setup per lo svuluppo
+## Setup per lo sviluppo
 0. Install **anaconda** `winget install Anaconda.Miniconda3`
 1. Clone repo
 2. Open anaconda prompt and navigate to project directory
