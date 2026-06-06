@@ -7,7 +7,7 @@
 {`matteo.ceccarelli12`, `alessandro.porcheddu`, `nicolas.tazzieri`, `matteo.todeschi2`}@studio.unibo.it
 
 ## Files
-- `main.ipbny`: contiene la parte principale del progetto
+- `main.ipynb`: contiene la parte principale del progetto
 - `calendar_feature_engineering.ipynb`: contiene i passaggi effettuati per estrarre i dati da calendars.csv
 
 ## Web app
