@@ -1,0 +1,16 @@
+.git
+node_modules
+dist
+.vite
+.cache
+.pytest_cache
+.mypy_cache
+__pycache__
+.venv
+venv
+env
+*.log
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db

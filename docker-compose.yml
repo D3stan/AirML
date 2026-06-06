@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: web-app/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - ARTIFACTS_DIR=/artifacts
+    volumes:
+      - ./web-app/artifacts:/artifacts:ro
+
+  frontend:
+    build:
+      context: ./web-app/frontend
+      args:
+        VITE_API_BASE_URL: /api
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
