@@ -14,6 +14,8 @@ services:
       - traefik.docker.network=dokploy-network
       # Route any traffic starting with /api to this backend container
       - traefik.http.routers.airml-backend.rule=Host(`airml.0xpuddu.com`) && PathPrefix(`/api`)
+      - traefik.http.middlewares.airml-strip.stripprefix.prefixes=/api
+      - traefik.http.routers.airml-backend.middlewares=airml-strip
       - traefik.http.routers.airml-backend.entrypoints=web
       - traefik.http.services.airml-backend.loadbalancer.server.port=8000
     networks:
