@@ -59,7 +59,7 @@ function LanguageSelector() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-[900] w-[230px] rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 shadow-ambient">
+        <div className="absolute right-0 top-[calc(100%+10px)] z-[2100] w-[230px] rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 shadow-ambient">
           {languageOptions.map((option) => (
             <button
               key={option.id}
@@ -89,7 +89,7 @@ export default function Header({ mode = "dashboard" }) {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-40 bg-[#f8fafc]/95 backdrop-blur md:sticky">
+      <header className="fixed inset-x-0 top-0 z-[2000] bg-[#f8fafc]/95 backdrop-blur md:sticky">
         <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between px-4 md:px-8">
           <Link to="/dashboard" className="flex items-center gap-3">
             <AirMlLogo />
