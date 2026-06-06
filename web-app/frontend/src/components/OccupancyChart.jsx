@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { monthLabels } from "../data/mockData.js";
+import { labelFor } from "../utils/i18n.js";
 
 const daysByMonth = {
   Jan: 31,
@@ -20,7 +21,7 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-export default function OccupancyChart({ monthly, relativeError }) {
+export default function OccupancyChart({ monthly, relativeError, language = "en", texts }) {
   const [visibleSeries, setVisibleSeries] = useState({
     upper: true,
     prediction: true,
@@ -46,15 +47,15 @@ export default function OccupancyChart({ monthly, relativeError }) {
   };
 
   const legendItems = [
-    { key: "upper", label: "Maximum prediction", colorClass: "bg-[#ffd5d3]" },
-    { key: "prediction", label: "Occupancy prediction", colorClass: "bg-primary-container" },
-    { key: "lower", label: "Minimum prediction", colorClass: "bg-primary" },
+    { key: "upper", label: texts?.maximumPrediction ?? "Maximum prediction", colorClass: "bg-[#ffd5d3]" },
+    { key: "prediction", label: texts?.occupancyPredictionLegend ?? "Occupancy prediction", colorClass: "bg-primary-container" },
+    { key: "lower", label: texts?.minimumPrediction ?? "Minimum prediction", colorClass: "bg-primary" },
   ];
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] font-bold text-on-surface-variant">
-        <span className="uppercase text-on-surface">Days</span>
+        <span className="uppercase text-on-surface">{texts?.days ?? "Days"}</span>
         {legendItems.map((item) => (
           <label key={item.key} className="inline-flex cursor-pointer select-none items-center gap-1.5">
             <input
@@ -80,36 +81,37 @@ export default function OccupancyChart({ monthly, relativeError }) {
             const upperHeight = `${Math.max(8, (upper / 31) * 100)}%`;
             const predictionHeight = `${Math.max(8, (prediction / 31) * 100)}%`;
             const lowerHeight = `${Math.max(8, (lower / 31) * 100)}%`;
+            const compactBarStyle = { minHeight: "28px" };
 
             return (
               <div key={month} className="flex h-full min-w-[38px] flex-1 flex-col items-center justify-end gap-2">
                 <div className="relative h-[min(35vh,315px)] w-[30px]">
                   {visibleSeries.upper && (
                     <div
-                      className="absolute bottom-0 left-0 flex w-full items-start justify-center rounded-lg bg-[#ffd5d3] pt-2 text-[10px] font-bold text-primary"
-                      style={{ height: upperHeight }}
+                      className="absolute bottom-0 left-0 flex w-full items-center justify-center rounded-lg bg-[#ffd5d3] text-[10px] font-bold text-primary"
+                      style={{ ...compactBarStyle, height: upperHeight }}
                     >
                       {upper}
                     </div>
                   )}
                   {visibleSeries.prediction && (
                     <div
-                      className="absolute bottom-0 left-0 flex w-full items-start justify-center rounded-lg bg-primary-container pt-2 text-[10px] font-bold text-on-primary-container"
-                      style={{ height: predictionHeight }}
+                      className="absolute bottom-0 left-0 flex w-full items-center justify-center rounded-lg bg-primary-container text-[10px] font-bold text-on-primary-container"
+                      style={{ ...compactBarStyle, height: predictionHeight }}
                     >
                       {prediction}
                     </div>
                   )}
                   {visibleSeries.lower && (
                     <div
-                      className="absolute bottom-0 left-0 flex w-full items-start justify-center rounded-lg bg-primary pt-2 text-[10px] font-bold text-on-primary"
-                      style={{ height: lowerHeight }}
+                      className="absolute bottom-0 left-0 flex w-full items-center justify-center rounded-lg bg-primary text-[10px] font-bold text-on-primary"
+                      style={{ ...compactBarStyle, height: lowerHeight }}
                     >
                       {lower}
                     </div>
                   )}
                 </div>
-                <span className="text-[12px] font-semibold text-on-surface">{month}</span>
+                <span className="text-[12px] font-semibold text-on-surface">{labelFor(language, "month", month)}</span>
               </div>
             );
           })}

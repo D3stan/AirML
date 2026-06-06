@@ -17,6 +17,7 @@ export default function ModelSelectDropdown({
   options = modelOptions,
   disabled = false,
   loading = false,
+  loadingLabel = "Loading...",
 }) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef(null);
@@ -49,7 +50,7 @@ export default function ModelSelectDropdown({
         aria-label={label}
         aria-expanded={open}
       >
-        <span className="min-w-0 truncate">{loading ? "Loading..." : selectedLabel}</span>
+        <span className="min-w-0 truncate">{loading ? loadingLabel : selectedLabel}</span>
         <span className="ml-3 flex shrink-0 items-center gap-2 text-on-surface-variant sm:ml-4 sm:gap-4">
           <span className="inline-flex items-center gap-1">
             <TrendingUp size={16} />

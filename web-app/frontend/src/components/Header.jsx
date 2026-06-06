@@ -1,5 +1,7 @@
 import { ArrowLeft, Settings } from "lucide-react";
+import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { textBundle } from "../utils/i18n.js";
 
 function AirMlLogo() {
   return (
@@ -19,6 +21,8 @@ function AirMlLogo() {
 
 export default function Header({ mode = "dashboard" }) {
   const isSettings = mode === "settings";
+  const language = useSelector((state) => state.property.language);
+  const texts = textBundle(language);
 
   return (
     <header className="sticky top-0 z-40 bg-[#f8fafc]/95 backdrop-blur">
@@ -27,7 +31,7 @@ export default function Header({ mode = "dashboard" }) {
           <AirMlLogo />
           <span className="flex flex-col">
             <span className="font-display text-[30px] font-extrabold leading-7 text-primary">AirML</span>
-            <span className="text-[11px] font-bold uppercase leading-4 tracking-[0.04em] text-on-surface">AI Rental Forecast Dashboard</span>
+            <span className="text-[11px] font-bold uppercase leading-4 tracking-[0.04em] text-on-surface">{texts.dashboardSubtitle}</span>
           </span>
         </Link>
 
@@ -37,14 +41,14 @@ export default function Header({ mode = "dashboard" }) {
             className="inline-flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-2 text-label-md text-on-surface-variant shadow-ambient-soft transition hover:border-primary hover:text-primary"
           >
             <ArrowLeft size={18} />
-            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="hidden sm:inline">{texts.backToDashboard}</span>
           </Link>
         ) : (
           <Link
             to="/settings"
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary shadow-ambient-soft transition hover:border-primary"
-            aria-label="Open property settings"
-            title="Open property settings"
+            aria-label={texts.openSettings}
+            title={texts.openSettings}
           >
             <Settings size={20} />
           </Link>

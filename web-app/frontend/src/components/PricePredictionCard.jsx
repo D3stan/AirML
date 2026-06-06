@@ -1,7 +1,17 @@
-import { Euro } from "lucide-react";
+import { Euro} from "lucide-react";
 import ModelSelectDropdown from "./ModelSelectDropdown.jsx";
 
-export default function PricePredictionCard({ prediction, occupancy, onModelChange, options, disabled = false, loading = false }) {
+export default function PricePredictionCard({ prediction, occupancy, onModelChange, options, disabled = false, loading = false, texts }) {
+  const labels = {
+    days: texts?.days ?? "days",
+    loading: texts?.loading ?? "Loading...",
+    lower: texts?.lower ?? "Lower",
+    perNight: texts?.perNight ?? "/night",
+    predictedRate: texts?.predictedRate ?? "Predicted Rate",
+    priceModelLabel: texts?.priceModelLabel ?? "Select price prediction model",
+    pricePrediction: texts?.pricePrediction ?? "Price Prediction",
+    upper: texts?.upper ?? "Upper",
+  };
   const circumference = 2 * Math.PI * 44;
   const progress = Math.min(Math.max(occupancy.annual_days / 365, 0), 1);
   const strokeDasharray = `${progress * circumference} ${circumference}`;
@@ -9,16 +19,17 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
   return (
     <article className="flex min-h-0 flex-1 flex-col overflow-visible rounded-2xl bg-surface-container-lowest px-6 pb-10 pt-6 shadow-ambient sm:p-6 md:p-7 lg:p-8">
       <div className="mb-5 flex flex-col items-start justify-between gap-4 sm:flex-row">
-        <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Price Prediction</h2>
+        <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">{labels.pricePrediction}</h2>
         <ModelSelectDropdown
           value={prediction.model_id ?? prediction.model}
           accuracy={prediction.accuracy}
           relativeError={prediction.relativeError}
           onChange={onModelChange}
-          label="Select price prediction model"
+          label={labels.priceModelLabel}
           options={options}
           disabled={disabled}
           loading={loading}
+          loadingLabel={labels.loading}
         />
       </div>
 
@@ -26,43 +37,43 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
         <div className="min-w-0">
           <div className="grid gap-4 lg:hidden">
             <div className="text-center">
-              <span className="block text-[11px] font-extrabold uppercase text-primary">Predicted Rate</span>
+              <span className="block text-[11px] font-extrabold uppercase text-primary">{labels.predictedRate}</span>
               <div className="mt-1 flex items-end justify-center gap-1 text-primary">
                 <span className="font-display text-[38px] font-extrabold leading-none sm:text-[44px]">{prediction.prediction}</span>
                 <Euro size={28} strokeWidth={3} className="mb-1 sm:size-[31px]" />
-                <span className="mb-1 text-[13px] font-semibold text-on-surface sm:text-[14px]">/night</span>
+                <span className="mb-1 text-[13px] font-semibold text-on-surface sm:text-[14px]">{labels.perNight}</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div className="text-center">
-                <span className="block text-[10px] font-bold uppercase text-on-surface">Lower</span>
-                <span className="mt-1 block text-[18px] font-bold text-[#5a2d2c]">{prediction.lower} EUR</span>
+                <span className="block text-[10px] font-bold uppercase text-on-surface">{labels.lower}</span>
+                <span className="mt-1 block text-[18px] font-bold text-[#5a2d2c]">{prediction.lower} €</span>
               </div>
               <div className="text-center">
-                <span className="block text-[10px] font-bold uppercase text-on-surface">Upper</span>
-                <span className="mt-1 block text-[18px] font-bold text-[#5a2d2c]">{prediction.upper} EUR</span>
+                <span className="block text-[10px] font-bold uppercase text-on-surface">{labels.upper}</span>
+                <span className="mt-1 block text-[18px] font-bold text-[#5a2d2c]">{prediction.upper} €</span>
               </div>
             </div>
           </div>
 
           <div className="hidden items-center gap-5 lg:grid lg:grid-cols-[1fr_auto_1.55fr_auto_1fr]">
             <div className="text-center">
-              <span className="block text-[10px] font-bold uppercase text-on-surface">Lower</span>
-              <span className="mt-1 block text-[18px] font-bold text-[#5a2d2c]">{prediction.lower} EUR</span>
+              <span className="block text-[10px] font-bold uppercase text-on-surface">{labels.lower}</span>
+              <span className="mt-1 block text-[18px] font-bold text-[#5a2d2c]">{prediction.lower} €</span>
             </div>
             <div className="h-12 w-px bg-outline-variant/35" />
             <div className="text-center">
-              <span className="block text-[11px] font-extrabold uppercase text-primary">Predicted Rate</span>
+              <span className="block text-[11px] font-extrabold uppercase text-primary">{labels.predictedRate}</span>
               <div className="mt-1 flex items-end justify-center gap-1 text-primary">
                 <span className="font-display text-[44px] font-extrabold leading-none">{prediction.prediction}</span>
                 <Euro size={31} strokeWidth={3} className="mb-1" />
-                <span className="mb-1 text-[14px] font-semibold text-on-surface">/night</span>
+                <span className="mb-1 text-[14px] font-semibold text-on-surface">{labels.perNight}</span>
               </div>
             </div>
             <div className="h-12 w-px bg-outline-variant/35" />
             <div className="text-center">
-              <span className="block text-[10px] font-bold uppercase text-on-surface">Upper</span>
-              <span className="mt-1 block text-[18px] font-bold text-[#5a2d2c]">{prediction.upper} EUR</span>
+              <span className="block text-[10px] font-bold uppercase text-on-surface">{labels.upper}</span>
+              <span className="mt-1 block text-[18px] font-bold text-[#5a2d2c]">{prediction.upper} €</span>
             </div>
           </div>
         </div>
@@ -87,7 +98,7 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
                 <span className="font-display text-[24px] font-bold leading-none text-on-surface sm:text-[28px] lg:text-[30px]">
                   {occupancy.annual_days}
                 </span>
-                <span className="text-[10px] font-semibold text-on-surface-variant sm:text-[11px]">days</span>
+                <span className="text-[10px] font-semibold text-on-surface-variant sm:text-[11px]">{labels.days}</span>
               </div>
               <span className="mt-2 text-[11px] font-extrabold text-primary sm:mt-3 sm:text-[13px] lg:text-[14px]">
                 {occupancy.annual_revenue.toLocaleString("en-US")} €

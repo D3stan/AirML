@@ -1,6 +1,6 @@
 import { Minus, Plus } from "lucide-react";
 
-export default function CounterInput({ label, value, min = 0, max = 50, onChange, changed = false, savedValue }) {
+export default function CounterInput({ label, value, min = 0, max = 50, onChange, changed = false, savedValue, savedLabel = "Saved", decreaseLabel = "Decrease", increaseLabel = "Increase" }) {
   const safeValue = Number(value) || 0;
 
   return (
@@ -19,7 +19,7 @@ export default function CounterInput({ label, value, min = 0, max = 50, onChange
           type="button"
           className="flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant text-on-surface-variant transition hover:border-primary hover:text-primary"
           onClick={() => onChange(Math.max(min, safeValue - 1))}
-          aria-label={`Decrease ${label}`}
+          aria-label={`${decreaseLabel} ${label}`}
         >
           <Minus size={17} />
         </button>
@@ -28,12 +28,12 @@ export default function CounterInput({ label, value, min = 0, max = 50, onChange
           type="button"
           className="flex h-9 w-9 items-center justify-center rounded-full border border-outline-variant text-on-surface-variant transition hover:border-primary hover:text-primary"
           onClick={() => onChange(Math.min(max, safeValue + 1))}
-          aria-label={`Increase ${label}`}
+          aria-label={`${increaseLabel} ${label}`}
         >
           <Plus size={17} />
         </button>
       </div>
-      {changed && <p className="mt-3 text-[11px] font-semibold text-primary">Saved: {savedValue}</p>}
+      {changed && <p className="mt-3 text-[11px] font-semibold text-primary">{savedLabel}: {savedValue}</p>}
     </div>
   );
 }

@@ -15,7 +15,39 @@ import {
   predictPrice,
   pricePredictionFromApi,
 } from "../services/apiService.js";
+import { labelFor, textBundle } from "../utils/i18n.js";
 import { saveMockPredictions } from "../utils/storage.js";
+
+const dashboardText = {
+  en: {
+    propertyProfile: "Property Profile",
+    city: "City",
+    neighbourhood: "Neighbourhood",
+    propertyType: "Property type",
+    roomType: "Room type",
+    guests: "Guests",
+    occupancyPrediction: "Occupancy Prediction",
+    priceModelsError: "Unable to load price models.",
+    occupancyModelsError: "Unable to load occupancy models.",
+    priceUpdateError: "Unable to update price prediction.",
+    occupancyUpdateError: "Unable to update occupancy prediction.",
+    occupancyModelLabel: "Select occupancy prediction model",
+  },
+  it: {
+    propertyProfile: "Profilo proprietà",
+    city: "Città",
+    neighbourhood: "Quartiere",
+    propertyType: "Tipologia alloggio",
+    roomType: "Tipo stanza",
+    guests: "Ospiti",
+    occupancyPrediction: "Predizione occupazione",
+    priceModelsError: "Impossibile caricare i modelli prezzo.",
+    occupancyModelsError: "Impossibile caricare i modelli occupazione.",
+    priceUpdateError: "Impossibile aggiornare la predizione prezzo.",
+    occupancyUpdateError: "Impossibile aggiornare la predizione occupazione.",
+    occupancyModelLabel: "Seleziona modello occupazione",
+  },
+};
 
 function SummaryRow({ label, value }) {
   return (
@@ -30,6 +62,8 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const property = useSelector((state) => state.property);
   const predictions = useSelector((state) => state.predictions);
+  const language = property.language === "it" ? "it" : "en";
+  const texts = textBundle(language);
   const [priceModels, setPriceModels] = useState([priceModelFallback]);
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState("");
@@ -48,7 +82,7 @@ export default function DashboardPage() {
       })
       .catch((error) => {
         if (active) {
-          setOccupancyError(error instanceof Error ? error.message : "Unable to load occupancy models.");
+          setOccupancyError(error instanceof Error ? error.message : texts.occupancyModelsError);
         }
       });
 
@@ -60,14 +94,14 @@ export default function DashboardPage() {
       })
       .catch((error) => {
         if (active) {
-          setPriceError(error instanceof Error ? error.message : "Unable to load price models.");
+          setPriceError(error instanceof Error ? error.message : texts.priceModelsError);
         }
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [texts.occupancyModelsError, texts.priceModelsError]);
 
   const updatePriceModel = async (modelId) => {
     setPriceLoading(true);
@@ -88,7 +122,7 @@ export default function DashboardPage() {
       dispatch(setPredictions(nextPredictions));
       saveMockPredictions(nextPredictions);
     } catch (error) {
-      setPriceError(error instanceof Error ? error.message : "Unable to update price prediction.");
+      setPriceError(error instanceof Error ? error.message : texts.priceUpdateError);
     } finally {
       setPriceLoading(false);
     }
@@ -107,7 +141,7 @@ export default function DashboardPage() {
       dispatch(setPredictions(nextPredictions));
       saveMockPredictions(nextPredictions);
     } catch (error) {
-      setOccupancyError(error instanceof Error ? error.message : "Unable to update occupancy prediction.");
+      setOccupancyError(error instanceof Error ? error.message : texts.occupancyUpdateError);
     } finally {
       setOccupancyLoading(false);
     }
@@ -118,20 +152,20 @@ export default function DashboardPage() {
       <Header />
       <main className="mx-auto grid w-full max-w-[1440px] min-w-0 gap-6 px-4 pb-6 pt-4 md:px-8 lg:h-[calc(100vh-72px)] lg:grid-cols-12 lg:pb-8">
         <section className="flex min-h-[640px] min-w-0 flex-col rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:min-h-[720px] md:p-8 lg:col-span-5 lg:min-h-0">
-          <h1 className="mb-5 font-display text-[24px] font-bold leading-8 text-on-surface">Property Profile</h1>
+          <h1 className="mb-5 font-display text-[24px] font-bold leading-8 text-on-surface">{texts.propertyProfile}</h1>
           <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border border-surface-container bg-white">
             <PropertyMapCard
               property={property}
-              mapCenter={[42.45, 12.55]}
+              mapCenter={[40.75, 12.55]}
               zoom={5}
               className="h-full min-h-0 rounded-xl"
             />
             <div className="absolute inset-x-4 bottom-4 z-[500] rounded-xl bg-surface-container-lowest/95 px-5 py-4 shadow-ambient-soft backdrop-blur sm:inset-x-6 sm:bottom-6 sm:px-6">
-              <SummaryRow label="City" value={property.city} />
-              <SummaryRow label="Neighbourhood" value={property.neighbourhood_cleansed} />
-              <SummaryRow label="Property type" value={property.property_type} />
-              <SummaryRow label="Room type" value={property.room_type.replace("/apt", "")} />
-              <SummaryRow label="Guests" value={property.accommodates} />
+              <SummaryRow label={texts.city} value={property.city} />
+              <SummaryRow label={texts.neighbourhood} value={property.neighbourhood_cleansed} />
+              <SummaryRow label={texts.propertyType} value={labelFor(language, "propertyType", property.property_type)} />
+              <SummaryRow label={texts.roomType} value={labelFor(language, "roomType", property.room_type)} />
+              <SummaryRow label={texts.guests} value={property.accommodates} />
             </div>
           </div>
         </section>
@@ -144,6 +178,7 @@ export default function DashboardPage() {
             options={priceModels}
             loading={priceLoading}
             disabled={priceModels.length === 0}
+            texts={texts}
           />
           {priceError && (
             <div className="rounded-xl border border-error/30 bg-primary-fixed px-4 py-3 text-label-md text-on-primary-fixed">
@@ -152,16 +187,17 @@ export default function DashboardPage() {
           )}
           <article className="flex min-h-[560px] min-w-0 flex-[1.48] flex-col overflow-visible rounded-2xl bg-surface-container-lowest p-6 shadow-ambient md:p-8 lg:min-h-0">
             <div className="mb-4 flex flex-col items-start justify-between gap-4 sm:flex-row">
-              <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">Occupancy Prediction</h2>
+              <h2 className="font-display text-[24px] font-bold leading-8 text-on-surface">{texts.occupancyPrediction}</h2>
               <ModelSelectDropdown
                 value={predictions.occupancy.model_id ?? predictions.occupancy.model}
                 accuracy={predictions.occupancy.accuracy}
                 relativeError={predictions.occupancy.relativeError}
                 onChange={updateOccupancyModel}
-                label="Select occupancy prediction model"
+                label={texts.occupancyModelLabel}
                 options={occupancyModels}
                 disabled={occupancyModels.length === 0}
                 loading={occupancyLoading}
+                loadingLabel={texts.loading}
               />
             </div>
             {occupancyError && (
@@ -173,6 +209,8 @@ export default function DashboardPage() {
               <OccupancyChart
                 monthly={predictions.occupancy.monthly}
                 relativeError={predictions.occupancy.relativeError}
+                language={language}
+                texts={texts}
               />
             </div>
           </article>
