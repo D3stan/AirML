@@ -7,10 +7,11 @@
 {`matteo.ceccarelli12`, `alessandro.porcheddu`, `nicolas.tazzieri`, `matteo.todeschi2`}@studio.unibo.it
 
 ## Files
-main.ipbny: contiene la parte principale del progetto
-calendar_feature_engineering.ipynb: contiene i passaggi effettuati per estrarre i dati da calendars.csv
+- `main.ipbny`: contiene la parte principale del progetto
+- `calendar_feature_engineering.ipynb`: contiene i passaggi effettuati per estrarre i dati da calendars.csv
 
-## Sito web
+## Web app
+Le istruzioni su come eseguire la web app sono presenti nella cartella web-app. Si può inoltre visualizzare una demo su [AirMl](https://airml.0xpuddu.com/dashboard) 
 
 ## Setup per lo svuluppo
 0. Install **anaconda** `winget install Anaconda.Miniconda3`
