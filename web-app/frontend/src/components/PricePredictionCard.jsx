@@ -101,7 +101,7 @@ export default function PricePredictionCard({ prediction, occupancy, onModelChan
                 <span className="text-[10px] font-semibold text-on-surface-variant sm:text-[11px]">{labels.days}</span>
               </div>
               <span className="mt-2 text-[11px] font-extrabold text-primary sm:mt-3 sm:text-[13px] lg:text-[14px]">
-                {occupancy.annual_revenue.toLocaleString("en-US")} €
+                {occupancy.annual_revenue.toLocaleString("it-IT")} €
               </span>
             </div>
           </div>
