@@ -8,6 +8,8 @@ ARTIFACTS_DIR = WEB_APP_DIR / "artifacts"
 
 OCCUPANCY_PREPROCESSOR_PATH = ARTIFACTS_DIR / "occ_model_preprocessor.joblib"
 OCCUPANCY_MODEL_PATH = ARTIFACTS_DIR / "occ_model_xgboost.joblib"
+OCCUPANCY_HIST_PREPROCESSOR_PATH = ARTIFACTS_DIR / "occ_model_preprocessor_hist.joblib"
+OCCUPANCY_HIST_MODEL_PATH = ARTIFACTS_DIR / "occ_model_hist.joblib"
 OCCUPANCY_TEMPLATE_PATH = ARTIFACTS_DIR / "occ_model_payload.json"
 OCCUPANCY_METADATA_PATH = ARTIFACTS_DIR / "occ_feature_metadata.json"
 PRICE_PREPROCESSOR_PATH = ARTIFACTS_DIR / "price_model_preprocessor.joblib"

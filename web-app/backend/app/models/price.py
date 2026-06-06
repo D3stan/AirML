@@ -27,8 +27,8 @@ PRICE_MODELS = {
     "logxgb": PriceModelMetadata(
         id="logxgb",
         name="XGBoost Log",
-        accuracy=75,
-        relative_error=25,
+        accuracy=62,
+        relative_error=20,
         model_path=PRICE_MODEL_PATH,
     )
 }

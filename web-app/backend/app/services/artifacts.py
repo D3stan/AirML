@@ -14,17 +14,29 @@ from app.core.config import (
     GEO_CLUSTER_MODEL_PATTERN,
     LEGACY_GEO_CLUSTER_MODEL_PATH,
     OCCUPANCY_METADATA_PATH,
-    OCCUPANCY_MODEL_PATH,
-    OCCUPANCY_PREPROCESSOR_PATH,
     OCCUPANCY_TEMPLATE_PATH,
     PRICE_MODEL_PATH,
     PRICE_PREPROCESSOR_PATH,
     PRICE_TEMPLATE_PATH,
 )
 from app.ml.legacy import MLBTransformer
+from app.models.occupancy import OCCUPANCY_MODELS
 
 
 logger = logging.getLogger("airml-backend")
+
+
+def register_pickle_compatibility_modules() -> None:
+    """Registra alias richiesti da artifact salvati con versioni sklearn diverse."""
+
+    setattr(sys.modules["__main__"], "MLBTransformer", MLBTransformer)
+
+    try:
+        import sklearn._loss._loss as sklearn_cy_loss
+    except Exception:
+        return
+
+    sys.modules.setdefault("_loss", sklearn_cy_loss)
 
 
 def missing_artifact_error(path: Path) -> HTTPException:
@@ -73,12 +85,18 @@ def load_occupancy_metadata() -> dict[str, Any]:
     return _load_json_artifact(OCCUPANCY_METADATA_PATH, "metadata occupancy")
 
 
-@lru_cache(maxsize=1)
-def load_occupancy_artifacts():
-    """Carica gli artifact occupancy una sola volta e li riusa nelle request."""
+@lru_cache(maxsize=8)
+def load_occupancy_artifacts(model_id: str = "xgboost"):
+    """Carica gli artifact occupancy del modello richiesto e li riusa nelle request."""
 
-    ensure_artifact(OCCUPANCY_PREPROCESSOR_PATH)
-    ensure_artifact(OCCUPANCY_MODEL_PATH)
+    model_metadata = OCCUPANCY_MODELS.get(model_id)
+    if model_metadata is None:
+        message = f"Modello occupancy non registrato: {model_id}"
+        logger.error(message)
+        raise HTTPException(status_code=404, detail=message)
+
+    ensure_artifact(model_metadata.preprocessor_path)
+    ensure_artifact(model_metadata.model_path)
 
     try:
         import joblib
@@ -88,13 +106,13 @@ def load_occupancy_artifacts():
         raise HTTPException(status_code=503, detail=message) from exc
 
     try:
-        setattr(sys.modules["__main__"], "MLBTransformer", MLBTransformer)
-        preprocessor = joblib.load(OCCUPANCY_PREPROCESSOR_PATH)
-        model = joblib.load(OCCUPANCY_MODEL_PATH)
+        register_pickle_compatibility_modules()
+        preprocessor = joblib.load(model_metadata.preprocessor_path)
+        model = joblib.load(model_metadata.model_path)
     except Exception as exc:
         message = (
             "Impossibile caricare gli artifact occupancy "
-            f"preprocessor={OCCUPANCY_PREPROCESSOR_PATH}, model={OCCUPANCY_MODEL_PATH}: {exc}"
+            f"model_id={model_id}, preprocessor={model_metadata.preprocessor_path}, model={model_metadata.model_path}: {exc}"
         )
         logger.exception(message)
         raise HTTPException(status_code=503, detail=message) from exc
@@ -117,7 +135,7 @@ def load_price_artifacts():
         raise HTTPException(status_code=503, detail=message) from exc
 
     try:
-        setattr(sys.modules["__main__"], "MLBTransformer", MLBTransformer)
+        register_pickle_compatibility_modules()
         preprocessor = joblib.load(PRICE_PREPROCESSOR_PATH)
         model = joblib.load(PRICE_MODEL_PATH)
     except Exception as exc:

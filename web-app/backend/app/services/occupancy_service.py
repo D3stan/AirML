@@ -104,7 +104,7 @@ def _coerce_prediction(value: Any, month_label: str) -> float:
     return prediction
 
 
-def _predict_month(feature_row: dict[str, Any]) -> Any:
+def _predict_month(feature_row: dict[str, Any], model_id: str) -> Any:
     try:
         import pandas as pd
     except Exception as exc:
@@ -112,16 +112,16 @@ def _predict_month(feature_row: dict[str, Any]) -> Any:
         logger.exception(message)
         raise HTTPException(status_code=503, detail=message) from exc
 
-    preprocessor, model = load_occupancy_artifacts()
+    preprocessor, model = load_occupancy_artifacts(model_id)
 
     try:
         columns = list(getattr(preprocessor, "feature_names_in_", feature_row.keys()))
         dataframe = pd.DataFrame([feature_row], columns=columns)
-        logger.info("Occupancy dataframe columns passed to preprocessor: %s", list(dataframe.columns))
+        logger.info("Occupancy dataframe columns passed to preprocessor model_id=%s: %s", model_id, list(dataframe.columns))
         transformed = preprocessor.transform(dataframe)
         prediction = model.predict(transformed)
     except Exception as exc:
-        message = f"Impossibile eseguire inferenza occupancy: {exc}"
+        message = f"Impossibile eseguire inferenza occupancy model_id={model_id}: {exc}"
         logger.exception(message)
         raise HTTPException(status_code=500, detail=message) from exc
 
@@ -155,7 +155,7 @@ def predict_occupancy(payload: OccupancyPredictionRequest) -> dict[str, Any]:
         if month_label == "Jan":
             logger.info("Occupancy raw feature row sample for Jan: %s", _to_json(_feature_debug_view(feature_row)))
 
-        raw_prediction = _predict_month(feature_row)
+        raw_prediction = _predict_month(feature_row, model_metadata.id)
         prediction = _coerce_prediction(raw_prediction, month_label)
 
         # L'artifact attuale predice occupancy_rate mensile in [0, 1].
