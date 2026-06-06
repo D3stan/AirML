@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 
 WEB_APP_DIR = Path(__file__).resolve().parents[3]
-ARTIFACTS_DIR = WEB_APP_DIR / "artifacts"
+ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", WEB_APP_DIR / "artifacts"))
 
 OCCUPANCY_PREPROCESSOR_PATH = ARTIFACTS_DIR / "occ_model_preprocessor.joblib"
 OCCUPANCY_MODEL_PATH = ARTIFACTS_DIR / "occ_model_xgboost.joblib"
