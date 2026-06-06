@@ -4,11 +4,21 @@ services:
       context: .
       dockerfile: web-app/backend/Dockerfile
     ports:
-      - "8000:8000"
+      - 8000:8000
     environment:
       - ARTIFACTS_DIR=/artifacts
     volumes:
       - ./web-app/artifacts:/artifacts:ro
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # Route any traffic starting with /api to this backend container
+      - traefik.http.routers.airml-backend.rule=Host(`airml.0xpuddu.com`) && PathPrefix(`/api`)
+      - traefik.http.routers.airml-backend.entrypoints=web
+      - traefik.http.services.airml-backend.loadbalancer.server.port=8000
+    networks:
+      - dokploy-network
+      - default
 
   frontend:
     build:
@@ -16,6 +26,21 @@ services:
       args:
         VITE_API_BASE_URL: /api
     ports:
-      - "5173:80"
+      - 5173:80
     depends_on:
       - backend
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # Route standard domain traffic to the frontend
+      - traefik.http.routers.airml-frontend.rule=Host(`airml.0xpuddu.com`)
+      - traefik.http.routers.airml-frontend.entrypoints=web
+      # IMPORTANT: Change 80 to 5173 if your frontend container uses the Vite dev server
+      - traefik.http.services.airml-frontend.loadbalancer.server.port=80 
+    networks:
+      - dokploy-network
+      - default
+
+networks:
+  dokploy-network:
+    external: true
