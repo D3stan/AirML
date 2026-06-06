@@ -1,7 +1,18 @@
 # AirML
-Predictive Analytics for Short-Term Rentals
+# Previsione del prezzo e dell'occupancy degli AirBnb in Italia
+**Progetto di Programmazione di applicazioni Data Intensive A.A. 2025-2026**
 
-## Setup
+**Realizzato da:** Matteo Ceccarelli, Alessandro Porcheddu, Nicolas Tazzieri, Matteo Todeschi
+
+{`matteo.ceccarelli12`, `alessandro.porcheddu`, `nicolas.tazzieri`, `matteo.todeschi2`}@studio.unibo.it
+
+## Files
+main.ipbny: contiene la parte principale del progetto
+calendar_feature_engineering.ipynb: contiene i passaggi effettuati per estrarre i dati da calendars.csv
+
+## Sito web
+
+## Setup per lo svuluppo
 0. Install **anaconda** `winget install Anaconda.Miniconda3`
 1. Clone repo
 2. Open anaconda prompt and navigate to project directory
@@ -12,5 +23,5 @@ Predictive Analytics for Short-Term Rentals
 7. Open `main.ipynb` in Jupyter Notebook or VSCode and run cells sequentially.
 8. Profit
 
-## Merging
+### Merging
 To merge the notebook file run `nbdime mergetool`. Link to docs: https://nbdime.readthedocs.io/en/latest/
