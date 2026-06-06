@@ -5,7 +5,6 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  Languages,
   MapPin,
   MessageSquareText,
   Pencil,
@@ -614,28 +613,6 @@ export default function SettingsPage() {
         </header>
 
         <div className="grid gap-6">
-          <SettingsSection icon={Languages} title={texts.languageSection}>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {[
-                { id: "en", label: texts.english },
-                { id: "it", label: texts.italian },
-              ].map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setField("language", option.id)}
-                  className={`min-h-12 rounded-xl border px-4 text-label-md font-bold transition ${
-                    language === option.id
-                      ? "border-primary bg-primary text-on-primary shadow-ambient-soft"
-                      : "border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:border-primary hover:text-primary"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </SettingsSection>
-
           <SettingsSection icon={MapPin} title={texts.location}>
             <div className="grid gap-6 md:grid-cols-2">
               <SelectMenu

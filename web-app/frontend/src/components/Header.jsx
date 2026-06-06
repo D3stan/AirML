@@ -1,6 +1,8 @@
-import { ArrowLeft, Settings } from "lucide-react";
-import { useSelector } from "react-redux";
+import { ArrowLeft, ChevronDown, Settings } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { updatePropertyField } from "../features/property/propertySlice.js";
 import { textBundle } from "../utils/i18n.js";
 
 function AirMlLogo() {
@@ -16,6 +18,67 @@ function AirMlLogo() {
         <circle cx="16" cy="15.25" r="2.6" stroke="currentColor" strokeWidth="2" />
       </svg>
     </span>
+  );
+}
+
+const languageOptions = [
+  { id: "en", code: "ENG", flag: "🇬🇧", label: "English" },
+  { id: "it", code: "ITA", flag: "🇮🇹", label: "Italiano" },
+];
+
+function LanguageSelector() {
+  const dispatch = useDispatch();
+  const language = useSelector((state) => state.property.language);
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+  const selected = languageOptions.find((option) => option.id === language) ?? languageOptions[0];
+
+  useEffect(() => {
+    const closeMenu = (event) => {
+      if (!wrapperRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", closeMenu);
+    return () => document.removeEventListener("mousedown", closeMenu);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 text-label-md font-bold text-primary shadow-ambient-soft transition hover:border-primary sm:h-11 sm:px-4"
+        aria-label="Language"
+        aria-expanded={open}
+      >
+        {/* <span className="text-[22px] leading-none">{selected.flag}</span> */}
+        <span>{selected.code}</span>
+        <ChevronDown size={18} className={`transition ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-[calc(100%+10px)] z-[900] w-[230px] rounded-2xl border border-outline-variant bg-surface-container-lowest p-2 shadow-ambient">
+          {languageOptions.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => {
+                dispatch(updatePropertyField({ field: "language", value: option.id }));
+                setOpen(false);
+              }}
+              className={`flex min-h-14 w-full items-center gap-4 rounded-xl px-4 text-left text-body-md font-bold transition ${
+                selected.id === option.id ? "bg-surface-container text-on-surface" : "text-on-surface-variant hover:bg-primary-fixed"
+              }`}
+            >
+              {/* <span className="text-[28px] leading-none">{option.flag}</span> */}
+              <span>{option.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -35,24 +98,27 @@ export default function Header({ mode = "dashboard" }) {
           </span>
         </Link>
 
-        {isSettings ? (
-          <Link
-            to="/dashboard"
-            className="inline-flex items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-2 text-label-md text-on-surface-variant shadow-ambient-soft transition hover:border-primary hover:text-primary"
-          >
-            <ArrowLeft size={18} />
-            <span className="hidden sm:inline">{texts.backToDashboard}</span>
-          </Link>
-        ) : (
-          <Link
-            to="/settings"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary shadow-ambient-soft transition hover:border-primary"
-            aria-label={texts.openSettings}
-            title={texts.openSettings}
-          >
-            <Settings size={20} />
-          </Link>
-        )}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSelector />
+          {isSettings ? (
+            <Link
+              to="/dashboard"
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 text-label-md text-on-surface-variant shadow-ambient-soft transition hover:border-primary hover:text-primary sm:h-11 sm:px-4"
+            >
+              <ArrowLeft size={18} />
+              <span className="hidden sm:inline">{texts.backToDashboard}</span>
+            </Link>
+          ) : (
+            <Link
+              to="/settings"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest text-primary shadow-ambient-soft transition hover:border-primary sm:h-11 sm:w-11"
+              aria-label={texts.openSettings}
+              title={texts.openSettings}
+            >
+              <Settings size={20} />
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );
